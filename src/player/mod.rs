@@ -6,15 +6,16 @@ use crate::util::{print_fps, FPS};
 pub mod player;
 
 pub fn init_player(builder: &mut AppBuilder, settings: &Settings) {
-    builder.add_system(camera_movement_system)
-        .add_system(mouse_motion_system)
-        .add_system(print_fps)
-        .add_startup_system(setup);
+    builder.add_system(camera_movement_system.system())
+        .add_system(mouse_motion_system.system())
+        .add_system(print_fps.system())
+        .add_startup_system(setup.system());
 }
 
 /// set up a simple scene with a "parent" cube and a "child" cube
+//TODO: mut 'commands: Commands' only works on 0.3 (change to 'commands: &mut Commands' otherwise)!
 fn setup(
-    commands: &mut Commands,
+    mut commands: Commands,
     meshes: ResMut<Assets<Mesh>>,
     textures: ResMut<Assets<Texture>>,
     materials: ResMut<Assets<StandardMaterial>>,
@@ -23,16 +24,19 @@ fn setup(
         .insert_resource(MouseState::default())
         .insert_resource(FPS::default())
         // light
-        .spawn(LightBundle {
+        .spawn(LightComponents {
             transform: Transform::from_translation(Vec3::new(-2.0, 8.0, -1.0)),
             ..Default::default()
         })
         // camera
-        .spawn(Camera3dBundle {
+        .spawn(Camera3dComponents {
             transform: Transform::from_translation(Vec3::new(5.0, 10.0, 10.0))
                 .looking_at(Vec3::default(), Vec3::unit_y()),
             ..Default::default()
-        }).with(PlayerMovement::new());
+        })
+        .with_bundle((
+            PlayerMovement::new()
+        ));
 }
 
 #[derive(Bundle)]

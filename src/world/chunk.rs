@@ -7,8 +7,7 @@ use std::ops::{Add, Index, IndexMut};
 use itertools::__std_iter::repeat;
 use std::collections::HashMap;
 
-use bevy::prelude::{Vec3, Entity, Handle, AssetServer, Assets, StandardMaterial, PbrBundle,
-                    Commands, Res, ResMut, Mesh, Texture};
+use bevy::prelude::*;
 
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Hash)]
@@ -45,9 +44,9 @@ impl ChunkPosition {
 
 impl From<Vec3> for ChunkPosition {
     fn from(vec: Vec3) -> Self {
-        ChunkPosition::new(vec.x as i64 >> CHUNK_SIZE_EXP,
-                           vec.y as i64 >> CHUNK_SIZE_EXP,
-                           vec.z as i64 >> CHUNK_SIZE_EXP)
+        ChunkPosition::new(vec.x() as i64 >> CHUNK_SIZE_EXP,
+                           vec.y() as i64 >> CHUNK_SIZE_EXP,
+                           vec.z() as i64 >> CHUNK_SIZE_EXP)
     }
 }
 
@@ -282,7 +281,7 @@ impl ChunkRegistry {
 
             println!("spawn cube mesh!");
             commands
-                .spawn(PbrBundle {
+                .spawn(PbrComponents {
                     mesh,
                     material: handle,
                     ..Default::default()
@@ -302,16 +301,18 @@ impl ChunkRegistry {
     }
 }
 
-pub fn init_chunks(mut registry: ResMut<ChunkRegistry>,
-                   commands: &mut Commands,
+//TODO: mut 'commands: Commands' only works on 0.3 (change to 'commands: &mut Commands' otherwise)!
+pub fn init_chunks(mut commands: Commands,
+                   mut registry: ResMut<ChunkRegistry>,
                    resources: Res<AssetServer>,
                    mut textures: ResMut<Assets<StandardMaterial>>,
                    mut meshes: ResMut<Assets<Mesh>>) {
-    registry.init(commands, resources, textures, meshes);
+    registry.init(&mut commands, resources, textures, meshes);
 }
 
-pub fn update_chunks(commands: &mut Commands,
+//TODO: mut 'commands: Commands' only works on 0.3 (change to 'commands: &mut Commands' otherwise)!
+pub fn update_chunks(mut commands: Commands,
                      mut registry: ResMut<ChunkRegistry>,
                      mut meshes: ResMut<Assets<Mesh>>) {
-    registry.update(commands, meshes, ChunkPosition::new(0, 1, 0));
+    registry.update(&mut commands, meshes, ChunkPosition::new(0, 1, 0));
 }

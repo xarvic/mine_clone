@@ -1,5 +1,5 @@
-use bevy::utils::Instant;
 use bevy::ecs::ResMut;
+use std::time::Instant;
 
 impl Default for FPS {
     fn default() -> Self {

@@ -17,6 +17,7 @@ mod player;
 mod controller;
 mod util;
 mod settings;
+mod physics;
 
 fn load_settings() -> Result<Settings> {
     Ok(match serde_json::from_reader(BufReader::new(File::open("./settings.json")?)) {

@@ -1,4 +1,4 @@
-use bevy::app::AppBuilder;
+use bevy::prelude::*;
 use chunk::{ChunkRegistry, ChunkPosition, init_chunks, update_chunks};
 use crate::settings::Settings;
 
@@ -12,6 +12,6 @@ pub fn init_world(builder: &mut AppBuilder, settings: &Settings) {
             2,
             4,
         ))
-        .add_startup_system(init_chunks)
-        .add_system(update_chunks);
+        .add_startup_system(init_chunks.system())
+        .add_system(update_chunks.system());
 }
