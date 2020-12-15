@@ -10,7 +10,7 @@ pub struct BlockInfo(u8);
 
 pub const EMPTY: BlockInfo = BlockInfo(0);
 pub const POWERED: BlockInfo = BlockInfo(1);
-pub const FULL: BlockInfo = BlockInfo(1 << 1);
+pub const BLOCK_MESH: BlockInfo = BlockInfo(1 << 1);
 
 impl BlockInfo {
     pub fn contains(&self, other: BlockInfo) -> bool {
@@ -60,7 +60,7 @@ pub struct Block {
 }
 
 pub static AIR: Block = Block{btype: 0, data: 0, info: EMPTY};
-pub static GROUND: Block = Block{btype: 1, data: 0, info: FULL};
+pub static GROUND: Block = Block{btype: 1, data: 0, info: BLOCK_MESH };
 
 struct TexCoords;
 

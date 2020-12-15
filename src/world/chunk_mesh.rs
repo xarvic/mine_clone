@@ -2,7 +2,7 @@ use bevy::render::mesh::{Mesh, Indices};
 use crate::world::chunk::Chunk;
 use bevy::render::pipeline::PrimitiveTopology;
 use bevy::prelude::*;
-use crate::world::block::FULL;
+use crate::world::block::BLOCK_MESH;
 
 #[inline(always)]
 fn create_face(verticies: &mut Vec<[f32; 3]>, indices: &mut Vec<u16>, normals: &mut Vec<[f32; 3]>, uvs: &mut Vec<[f32; 2]>,
@@ -63,14 +63,14 @@ pub fn create_chunk_mesh(chunk: &Chunk) -> Mesh {
     let chunk_data = &chunk.data;
 
     for (position, block) in chunk_data.iter() {
-        if block.info.contains(FULL) {
+        if block.info.contains(BLOCK_MESH) {
             let lower = chunk.position + position;
             let heigher = lower + Vec3::new(1.0, 1.0, 1.0);
 
             //println!("build block: {:?}", position);
 
             //Up
-            if chunk_data.get(position.y(1)).map_or(true, |block|!block.info.contains(FULL)) {
+            if chunk_data.get(position.y(1)).map_or(true, |block|!block.info.contains(BLOCK_MESH)) {
                 create_face(&mut verticies, &mut indices, &mut normals, &mut uvs,
                             Vec3::new(0.0, 1.0, 0.0),
                             heigher, Vec3::new(-1.0, 0.0, 0.0), Vec3::new(0.0, 0.0, -1.0),
@@ -78,7 +78,7 @@ pub fn create_chunk_mesh(chunk: &Chunk) -> Mesh {
                 );
             }
             //side 1
-            if chunk_data.get(position.x(1)).map_or(true, |block|!block.info.contains(FULL)) {
+            if chunk_data.get(position.x(1)).map_or(true, |block|!block.info.contains(BLOCK_MESH)) {
                 create_face(&mut verticies, &mut indices, &mut normals, &mut uvs,
                             Vec3::new(1.0, 0.0, 0.0),
                             Vec3::new(heigher.x, heigher.y, heigher.z), Vec3::new(0.0, 0.0, -1.0), Vec3::new(0.0, -1.0, 0.0),
@@ -86,7 +86,7 @@ pub fn create_chunk_mesh(chunk: &Chunk) -> Mesh {
                 );
             }
             //side 2
-            if chunk_data.get(position.z(1)).map_or(true, |block|!block.info.contains(FULL)) {
+            if chunk_data.get(position.z(1)).map_or(true, |block|!block.info.contains(BLOCK_MESH)) {
                 create_face(&mut verticies, &mut indices, &mut normals, &mut uvs,
                             Vec3::new(0.0, 0.0, 1.0),
                             Vec3::new(lower.x, heigher.y, heigher.z), Vec3::new(1.0, 0.0, 0.0), Vec3::new(0.0, -1.0, 0.0),
@@ -94,7 +94,7 @@ pub fn create_chunk_mesh(chunk: &Chunk) -> Mesh {
                 );
             }
             //Down
-            if chunk_data.get(position.y(-1)).map_or(true, |block|!block.info.contains(FULL)) {
+            if chunk_data.get(position.y(-1)).map_or(true, |block|!block.info.contains(BLOCK_MESH)) {
                 create_face(&mut verticies, &mut indices, &mut normals, &mut uvs,
                             Vec3::new(0.0, -1.0, 0.0),
                             lower, Vec3::new(0.0, 0.0, 1.0), Vec3::new(1.0, 0.0, 0.0),
@@ -102,7 +102,7 @@ pub fn create_chunk_mesh(chunk: &Chunk) -> Mesh {
                 );
             }
             //side -1
-            if chunk_data.get(position.x(-1)).map_or(true, |block|!block.info.contains(FULL)) {
+            if chunk_data.get(position.x(-1)).map_or(true, |block|!block.info.contains(BLOCK_MESH)) {
                 create_face(&mut verticies, &mut indices, &mut normals, &mut uvs,
                             Vec3::new(0.0, 0.0, 1.0),
                             Vec3::new(lower.x, heigher.y, lower.z), Vec3::new(0.0, 0.0, 1.0), Vec3::new(0.0, -1.0, 0.0),
@@ -110,7 +110,7 @@ pub fn create_chunk_mesh(chunk: &Chunk) -> Mesh {
                 );
             }
             //side -2
-            if chunk_data.get(position.z(-1)).map_or(true, |block|!block.info.contains(FULL)) {
+            if chunk_data.get(position.z(-1)).map_or(true, |block|!block.info.contains(BLOCK_MESH)) {
                 create_face(&mut verticies, &mut indices, &mut normals, &mut uvs,
                             Vec3::new(0.0, 0.0, 1.0),
                             Vec3::new(heigher.x, heigher.y, lower.z), Vec3::new(-1.0, 0.0, 0.0), Vec3::new(0.0, -1.0, 0.0),
