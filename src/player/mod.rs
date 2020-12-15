@@ -17,3 +17,8 @@ impl PlayerBundle {
         }
     }
 }
+
+struct PlayerState {
+    position: Vec3,
+    movement: Vec3,
+}

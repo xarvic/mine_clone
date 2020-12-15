@@ -1,8 +1,16 @@
-use crate::world::block::{Block, AIR};
+use crate::world::block::{Block, AIR, GROUND};
+use crate::world::chunk_mesh::create_chunk_mesh;
+
 use std::mem::replace;
+use std::time::{Instant, Duration};
 use std::ops::{Add, Index, IndexMut};
-use bevy::prelude::Vec3;
 use itertools::__std_iter::repeat;
+use std::collections::HashMap;
+
+use bevy::prelude::{Vec3, Entity, Handle, AssetServer, Assets, StandardMaterial, PbrBundle,
+                    Commands, Res, ResMut, Mesh, Texture};
+use bevy::render::pipeline::InputStepMode::Instance;
+
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Hash)]
 pub struct ChunkPosition {
@@ -19,8 +27,30 @@ impl ChunkPosition {
             z,
         }
     }
+    pub fn x(&self, x: i64) -> Self {
+        let mut new = *self;
+        new.x += x;
+        new
+    }
+    pub fn y(&self, y: i64) -> Self {
+        let mut new = *self;
+        new.y += y;
+        new
+    }
+    pub fn z(&self, z: i64) -> Self {
+        let mut new = *self;
+        new.z += z;
+        new
+    }
 }
 
+impl From<Vec3> for ChunkPosition {
+    fn from(vec: Vec3) -> Self {
+        ChunkPosition::new(vec.x as i64 >> CHUNK_SIZE_EXP,
+                           vec.y as i64 >> CHUNK_SIZE_EXP,
+                           vec.z as i64 >> CHUNK_SIZE_EXP)
+    }
+}
 
 
 /// A position relative to a chunk
@@ -31,9 +61,15 @@ pub struct BlockPosition {
     pub(crate) z: i64,
 }
 
+const CHUNK_SIZE_EXP: u32 = 4;
+//Dont change auto generated!
+const CHUNK_SIZE: i64 = 1 << CHUNK_SIZE_EXP;
+
 impl BlockPosition {
-    const BLOCK_BITS: i64 = 15;
-    const CHUNK_BITS: i64 = !15;
+    //Dont change auto generated!
+    const BLOCK_BITS: i64 = CHUNK_SIZE - 1;
+    //Dont change auto generated!
+    const CHUNK_BITS: i64 = !Self::BLOCK_BITS;
 
     pub fn new(x: i64, y: i64, z: i64) -> Self {
         BlockPosition{
@@ -73,27 +109,38 @@ impl Add<BlockPosition> for ChunkPosition {
     type Output = Vec3;
 
     fn add(self, rhs: BlockPosition) -> Self::Output {
-        Vec3::new((self.x * 16) as f32 + rhs.x as f32, (self.y * 16) as f32 + rhs.y as f32, (self.z * 16) as f32 + rhs.z as f32)
+        Vec3::new((self.x << CHUNK_SIZE_EXP) as f32 + rhs.x as f32,
+                  (self.y << CHUNK_SIZE_EXP) as f32 + rhs.y as f32,
+                  (self.z << CHUNK_SIZE_EXP) as f32 + rhs.z as f32)
     }
+}
+
+pub struct Chunk {
+    pub position: ChunkPosition,
+    pub data: ChunkData,
+
+    //Adjacent chunks
+    pub x_positive: Option<Entity>,
+    pub x_negative: Option<Entity>,
+    pub y_positive: Option<Entity>,
+    pub y_negative: Option<Entity>,
+    pub z_positive: Option<Entity>,
+    pub z_negative: Option<Entity>,
 }
 
 #[derive(Clone)]
-pub struct Chunk{
-    pub position: ChunkPosition,
-    pub data: [[[Block; 16]; 16]; 16],
-    pub mesh_update: bool,
+pub struct ChunkData {
+    pub blocks: [[[Block; CHUNK_SIZE as usize]; CHUNK_SIZE as usize]; CHUNK_SIZE as usize],
 }
 
-impl Chunk{
-    pub fn new(data: [[[Block; 16]; 16]; 16], position: ChunkPosition) -> Self {
+impl ChunkData {
+    pub fn new(data: [[[Block; CHUNK_SIZE as usize]; CHUNK_SIZE as usize]; CHUNK_SIZE as usize]) -> Self {
         Self{
-            position,
-            data,
-            mesh_update: true,
+            blocks: data,
         }
     }
-    pub fn filled(block: Block, position: impl Into<ChunkPosition>) -> Self {
-        Self::new([[[block; 16]; 16]; 16], position.into())
+    pub fn filled(block: Block) -> Self {
+        Self::new([[[block; CHUNK_SIZE as usize]; CHUNK_SIZE as usize]; CHUNK_SIZE as usize])
     }
     pub fn get(&self, pos: BlockPosition) -> Option<&Block> {
         if pos.fits() {
@@ -105,7 +152,7 @@ impl Chunk{
         }
     }
     pub unsafe fn get_unchecked(&self, pos: BlockPosition) -> &Block {
-        self.data.get_unchecked(pos.x as usize)
+        self.blocks.get_unchecked(pos.x as usize)
             .get_unchecked(pos.y as usize)
             .get_unchecked(pos.z as usize)
     }
@@ -119,7 +166,7 @@ impl Chunk{
         }
     }
     pub unsafe fn get_unchecked_mut(&mut self, pos: BlockPosition) -> &mut Block {
-        self.data.get_unchecked_mut(pos.x as usize)
+        self.blocks.get_unchecked_mut(pos.x as usize)
             .get_unchecked_mut(pos.y as usize)
             .get_unchecked_mut(pos.z as usize)
     }
@@ -127,21 +174,21 @@ impl Chunk{
         replace(&mut self.get_mut(pos).unwrap(), AIR)
     }
     pub fn iter(&self) -> impl Iterator<Item = (BlockPosition, &Block)> {
-        self.data.iter().enumerate()
+        self.blocks.iter().enumerate()
             .flat_map(|(x, items)|items.iter().enumerate().zip(repeat(x)))
             .flat_map(|((y, items), x)|items.iter().enumerate().zip(repeat((x, y))))
             .map(|((z, block), (x, y))|(BlockPosition::new(x as i64, y as i64, z as i64), block))
     }
 
     pub fn iter_mut(&mut self) -> impl Iterator<Item = (BlockPosition, &mut Block)> {
-        self.data.iter_mut().enumerate()
+        self.blocks.iter_mut().enumerate()
             .flat_map(|(x, items)|items.iter_mut().enumerate().zip(repeat(x)))
             .flat_map(|((y, items), x)|items.iter_mut().enumerate().zip(repeat((x, y))))
             .map(|((z, block), (x, y))|(BlockPosition::new(x as i64, y as i64, z as i64), block))
     }
 }
 
-impl<T: Into<BlockPosition>> Index<T> for Chunk {
+impl<T: Into<BlockPosition>> Index<T> for ChunkData {
     type Output = Block;
 
     fn index(&self, index: T) -> &Self::Output {
@@ -153,7 +200,7 @@ impl<T: Into<BlockPosition>> Index<T> for Chunk {
     }
 }
 
-impl<T: Into<BlockPosition>> IndexMut<T> for Chunk {
+impl<T: Into<BlockPosition>> IndexMut<T> for ChunkData {
     fn index_mut(&mut self, index: T) -> &mut Self::Output {
         let pos = index.into();
         assert!(pos.fits(), "invalid Blockposition");
@@ -161,4 +208,111 @@ impl<T: Into<BlockPosition>> IndexMut<T> for Chunk {
             self.get_unchecked_mut(pos)
         }
     }
+}
+
+fn chunk_loader(position: ChunkPosition) -> ChunkData {
+    if position.y > 0 {
+        ChunkData::filled(AIR)
+    } else {
+        ChunkData::filled(GROUND)
+    }
+}
+
+pub struct ChunkRegistry {
+    chunks: HashMap<ChunkPosition, Entity>,
+    player_chunk: ChunkPosition,
+    chunk_loading_distance: f32,
+    chunk_discard_distance: f32,
+    texture_atlas: Option<Handle<StandardMaterial>>,
+}
+
+impl ChunkRegistry {
+    pub fn new(current_position: ChunkPosition, chunk_loading_distance: u32, chunk_discard_distance: u32) -> Self {
+        Self {
+            chunks: HashMap::new(),
+            player_chunk: current_position,
+            chunk_loading_distance: chunk_loading_distance as f32,
+            chunk_discard_distance: chunk_discard_distance as f32,
+            texture_atlas: None,
+        }
+    }
+    fn init(&mut self, commands: &mut Commands,
+            server: Res<AssetServer>,
+            mut materials: ResMut<Assets<StandardMaterial>>,
+            mut meshes: ResMut<Assets<Mesh>>,
+    ) {
+        println!("init registry!");
+
+        let texture: Handle<Texture> = server.load("textures.png");
+        let material = StandardMaterial{
+            albedo: Default::default(),
+            albedo_texture: Some(texture),
+            shaded: false
+        };
+
+        let material_handle = materials.add(material);
+
+        self.texture_atlas = Some(material_handle);
+
+        self.load_chunk(commands, &mut meshes, ChunkPosition::new(0, 0, 0), true);
+        self.load_chunk(commands, &mut meshes, ChunkPosition::new(1, 0, 0), true);
+        self.load_chunk(commands, &mut meshes, ChunkPosition::new(0, 0, 1), true);
+        self.load_chunk(commands, &mut meshes, ChunkPosition::new(1, 0, 1), true);
+    }
+    fn load_chunk(&mut self, commands: &mut Commands, meshes: &mut ResMut<Assets<Mesh>>, chunk_position: ChunkPosition, rendered: bool) {
+        let chunk_data = chunk_loader(chunk_position);
+
+        let chunk = Chunk {
+            position: chunk_position,
+            data: chunk_data,
+
+            x_positive: self.chunks.get(&chunk_position.x( 1)).cloned(),
+            x_negative: self.chunks.get(&chunk_position.x(-1)).cloned(),
+            y_positive: self.chunks.get(&chunk_position.y( 1)).cloned(),
+            y_negative: self.chunks.get(&chunk_position.y(-1)).cloned(),
+            z_positive: self.chunks.get(&chunk_position.z( 1)).cloned(),
+            z_negative: self.chunks.get(&chunk_position.z(-1)).cloned(),
+        };
+
+        let entity = if rendered {
+            let start = Instant::now();
+            let mesh = meshes.add(create_chunk_mesh(&chunk));
+            println!("created mesh in {} sec. !", start.elapsed().as_secs_f32());
+
+            let handle = self.texture_atlas.clone().unwrap();
+
+            println!("spawn cube mesh!");
+            commands
+                .spawn(PbrBundle {
+                    mesh,
+                    material: handle,
+                    ..Default::default()
+                })
+                .with(chunk);
+            commands.current_entity().unwrap()//We just inserted one, this should be ok
+        } else {
+
+            commands.spawn((chunk,));
+            commands.current_entity().unwrap()
+        };
+
+        self.chunks.insert(chunk_position, entity);
+    }
+    pub fn update(&mut self, commands: &mut Commands, meshes: ResMut<Assets<Mesh>>, new_position: ChunkPosition) {
+
+    }
+}
+
+pub fn init_chunks(mut registry: ResMut<ChunkRegistry>,
+                   commands: &mut Commands,
+                   resources: Res<AssetServer>,
+                   mut textures: ResMut<Assets<StandardMaterial>>,
+                   mut meshes: ResMut<Assets<Mesh>>) {
+    registry.init(commands, resources, textures, meshes);
+}
+
+pub fn update_chunks(commands: &mut Commands,
+                     mut registry: ResMut<ChunkRegistry>,
+                     mut meshes: ResMut<Assets<Mesh>>) {
+    registry.update(commands, meshes, ChunkPosition::new(0, 1, 0));
 }
