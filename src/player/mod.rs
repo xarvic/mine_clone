@@ -2,6 +2,8 @@ use bevy::prelude::*;
 use player::{PlayerMovement, camera_movement_system, mouse_motion_system, MouseState};
 use crate::settings::Settings;
 use crate::util::{print_fps, FPS};
+use bevy_rapier3d::rapier::dynamics::{RigidBodyBuilder, MassProperties};
+use bevy_rapier3d::rapier::geometry::ColliderBuilder;
 
 pub mod player;
 
@@ -20,6 +22,10 @@ fn setup(
     textures: ResMut<Assets<Texture>>,
     materials: ResMut<Assets<StandardMaterial>>,
 ) {
+
+    let rigid_body = RigidBodyBuilder::new_dynamic().mass(0.0, true);
+    let collider = ColliderBuilder::capsule_y(1.0, 1.0);
+
     commands
         .insert_resource(MouseState::default())
         .insert_resource(FPS::default())
@@ -35,7 +41,9 @@ fn setup(
             ..Default::default()
         })
         .with_bundle((
-            PlayerMovement::new()
+            PlayerMovement::new(),
+            rigid_body,
+            collider,
         ));
 }
 

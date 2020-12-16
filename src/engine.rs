@@ -14,7 +14,6 @@ pub fn load_engine(settings: Settings) -> App {
     builder.add_resource(Msaa { samples: settings.render_settings.msaa_samples });
     builder.add_plugins(DefaultPlugins);
     builder.add_plugin(RapierPhysicsPlugin);
-    builder.add_startup_system(setup_physics.system());
 
     //Add Player
     init_player(&mut builder, &settings);

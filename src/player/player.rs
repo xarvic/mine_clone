@@ -1,5 +1,8 @@
 use bevy::prelude::*;
 use bevy::input::mouse::MouseMotion;
+use bevy_rapier3d::rapier::dynamics::{RigidBodySet, RigidBodyHandle};
+use bevy_rapier3d::rapier::na::Vector3;
+use bevy_rapier3d::physics::RigidBodyHandleComponent;
 
 pub struct PlayerMovement {
     /// The speed the FlyCamera moves at. Defaults to `1.0`
@@ -30,6 +33,8 @@ pub struct PlayerMovement {
     pub key_down: KeyCode,
     /// If `false`, disable keyboard control of the camera. Defaults to `true`
     pub enabled: bool,
+
+    pub frames: u64,
 }
 
 impl PlayerMovement {
@@ -49,6 +54,7 @@ impl PlayerMovement {
             key_up: KeyCode::Space,
             key_down: KeyCode::LShift,
             enabled: true,
+            frames: 0,
         }
     }
 }
@@ -88,57 +94,68 @@ fn movement_axis(
 pub fn camera_movement_system(
     time: Res<Time>,
     keyboard_input: Res<Input<KeyCode>>,
-    mut query: Query<(&mut PlayerMovement, &mut Transform)>,
+    mut rigid_bodies: ResMut<RigidBodySet>,
+    mut query: Query<(&mut PlayerMovement, &mut Transform, &mut RigidBodyHandleComponent)>,
 ) {
-    for (mut options, mut transform) in query.iter_mut() {
-        let (axis_h, axis_v, axis_float) = if options.enabled {
-            (
-                movement_axis(&keyboard_input, options.key_right, options.key_left),
-                movement_axis(
-                    &keyboard_input,
-                    options.key_backward,
-                    options.key_forward,
-                ),
-                movement_axis(&keyboard_input, options.key_up, options.key_down),
-            )
-        } else {
-            (0.0, 0.0, 0.0)
-        };
+    for (mut options, mut transform, mut rigid_body) in query.iter_mut() {
+        if let Some(rigid_body) = rigid_bodies.get_mut(rigid_body.handle()) {
+            let (axis_h, axis_v, axis_float) = if options.enabled {
+                (
 
-        let rotation = transform.rotation;
-        let accel: Vec3 = (strafe_vector(&rotation) * axis_h)
-            + (forward_walk_vector(&rotation) * axis_v)
-            + (Vec3::unit_y() * axis_float);
-        let accel: Vec3 = if accel.length() != 0.0 {
-            accel.normalize() * options.speed
-        } else {
-            Vec3::zero()
-        };
+                    movement_axis(&keyboard_input, options.key_right, options.key_left),
+                    movement_axis(
+                        &keyboard_input,
+                        options.key_backward,
+                        options.key_forward,
+                    ),
+                    movement_axis(&keyboard_input, options.key_up, options.key_down),
+                )
+            } else {
+                (0.0, 0.0, 0.0)
+            };
 
-        let friction: Vec3 = if options.velocity.length() != 0.0 {
-            options.velocity.normalize() * -1.0 * options.friction
-        } else {
-            Vec3::zero()
-        };
+            let rotation = transform.rotation;
+            let accel: Vec3 = (strafe_vector(&rotation) * axis_h)
+                + (forward_vector(&rotation) * axis_v)
+                + (Vec3::unit_y() * axis_float);
+            let accel: Vec3 = if accel.length() != 0.0 {
+                accel.normalize() * options.speed
+            } else {
+                Vec3::zero()
+            };
 
-        options.velocity += accel * time.delta_seconds;
+            let friction: Vec3 = if options.velocity.length() != 0.0 {
+                options.velocity.normalize() * -1.0 * options.friction
+            } else {
+                Vec3::zero()
+            };
 
-        // clamp within max speed
-        if options.velocity.length() > options.max_speed {
-            options.velocity = options.velocity.normalize() * options.max_speed;
+            //options.velocity += accel * time.delta_seconds;
+            let force = accel * time.delta_seconds;
+            rigid_body.apply_force(Vector3::new(force.x(), force.y(), force.z()), true);
+
+            // clamp within max speed
+            /*if options.velocity.length() > options.max_speed {
+                options.velocity = options.velocity.normalize() * options.max_speed;
+            }*/
+
+            let delta_friction = friction * time.delta_seconds;
+
+            options.velocity = if (options.velocity + delta_friction).signum()
+                != options.velocity.signum()
+            {
+                Vec3::zero()
+            } else {
+                options.velocity + delta_friction
+            };
+
+            //transform.translation += options.velocity;
+
+            options.frames += 1;
+            if options.frames % 30 == 0 {
+                println!("position: {}", transform.translation);
+            }
         }
-
-        let delta_friction = friction * time.delta_seconds;
-
-        options.velocity = if (options.velocity + delta_friction).signum()
-            != options.velocity.signum()
-        {
-            Vec3::zero()
-        } else {
-            options.velocity + delta_friction
-        };
-
-        transform.translation += options.velocity;
     }
 }
 
