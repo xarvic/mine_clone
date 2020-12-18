@@ -2,7 +2,7 @@ use bevy::render::mesh::{Mesh, Indices, VertexAttributeValues};
 use crate::world::chunk::Chunk;
 use bevy::render::pipeline::PrimitiveTopology;
 use bevy::prelude::*;
-use crate::world::block::BLOCK_MESH;
+use crate::world::block_inner::{BLOCK_MESH, TEXTURES, BlockLook, Side};
 
 #[inline(always)]
 fn create_face(verticies: &mut Vec<[f32; 3]>, indices: &mut Vec<u16>, normals: &mut Vec<[f32; 3]>, uvs: &mut Vec<[f32; 2]>,
@@ -63,7 +63,8 @@ pub fn create_chunk_mesh(chunk: &Chunk) -> Mesh {
     let chunk_data = &chunk.data;
 
     for (position, block) in chunk_data.iter() {
-        if block.info.contains(BLOCK_MESH) {
+        if let BlockLook::Faces{ref textures } = TEXTURES[block.btype as usize] {
+
             let global_position = chunk.position + position;
             let lower= global_position.lower_corner();
             let heigher = global_position.higher_corner();
@@ -75,7 +76,7 @@ pub fn create_chunk_mesh(chunk: &Chunk) -> Mesh {
                 create_face(&mut verticies, &mut indices, &mut normals, &mut uvs,
                             Vec3::new(0.0, 1.0, 0.0),
                             heigher, Vec3::new(-1.0, 0.0, 0.0), Vec3::new(0.0, 0.0, -1.0),
-                            16, 0
+                            16, textures[Side::Top]
                 );
             }
             //side 1
@@ -83,7 +84,7 @@ pub fn create_chunk_mesh(chunk: &Chunk) -> Mesh {
                 create_face(&mut verticies, &mut indices, &mut normals, &mut uvs,
                             Vec3::new(1.0, 0.0, 0.0),
                             Vec3::new(heigher.x, heigher.y, heigher.z), Vec3::new(0.0, 0.0, -1.0), Vec3::new(0.0, -1.0, 0.0),
-                            16, 3
+                            16, textures[Side::Front]
                 );
             }
             //side 2
@@ -91,7 +92,7 @@ pub fn create_chunk_mesh(chunk: &Chunk) -> Mesh {
                 create_face(&mut verticies, &mut indices, &mut normals, &mut uvs,
                             Vec3::new(0.0, 0.0, 1.0),
                             Vec3::new(lower.x, heigher.y, heigher.z), Vec3::new(1.0, 0.0, 0.0), Vec3::new(0.0, -1.0, 0.0),
-                            16, 3
+                            16, textures[Side::Left]
                 );
             }
             //Down
@@ -99,7 +100,7 @@ pub fn create_chunk_mesh(chunk: &Chunk) -> Mesh {
                 create_face(&mut verticies, &mut indices, &mut normals, &mut uvs,
                             Vec3::new(0.0, -1.0, 0.0),
                             lower, Vec3::new(0.0, 0.0, 1.0), Vec3::new(1.0, 0.0, 0.0),
-                            16, 2
+                            16, textures[Side::Bottom]
                 );
             }
             //side -1
@@ -107,7 +108,7 @@ pub fn create_chunk_mesh(chunk: &Chunk) -> Mesh {
                 create_face(&mut verticies, &mut indices, &mut normals, &mut uvs,
                             Vec3::new(0.0, 0.0, 1.0),
                             Vec3::new(lower.x, heigher.y, lower.z), Vec3::new(0.0, 0.0, 1.0), Vec3::new(0.0, -1.0, 0.0),
-                            16, 3
+                            16, textures[Side::Back]
                 );
             }
             //side -2
@@ -115,7 +116,7 @@ pub fn create_chunk_mesh(chunk: &Chunk) -> Mesh {
                 create_face(&mut verticies, &mut indices, &mut normals, &mut uvs,
                             Vec3::new(0.0, 0.0, 1.0),
                             Vec3::new(heigher.x, heigher.y, lower.z), Vec3::new(-1.0, 0.0, 0.0), Vec3::new(0.0, -1.0, 0.0),
-                            16, 3
+                            16, textures[Side::Right]
                 );
             }
         }

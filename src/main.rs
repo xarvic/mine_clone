@@ -2,7 +2,7 @@
 #![allow(dead_code)]
 #![allow(unused_mut)]
 
-#![feature(with_options)]
+#![feature(with_options, const_fn)]
 
 use crate::engine::load_engine;
 use anyhow::Result;

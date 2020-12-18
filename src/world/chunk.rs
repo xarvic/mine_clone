@@ -1,4 +1,4 @@
-use crate::world::block::{Block, AIR, GROUND};
+use crate::world::block_inner::{BlockInner, AIR, GRASS, DIRT, STONE};
 use crate::world::chunk_mesh::create_chunk_mesh;
 
 use std::mem::replace;
@@ -37,19 +37,19 @@ impl Chunk {
 
 #[derive(Clone)]
 pub struct ChunkData {
-    pub blocks: [[[Block; CHUNK_SIZE as usize]; CHUNK_SIZE as usize]; CHUNK_SIZE as usize],
+    pub blocks: [[[BlockInner; CHUNK_SIZE as usize]; CHUNK_SIZE as usize]; CHUNK_SIZE as usize],
 }
 
 impl ChunkData {
-    pub fn new(data: [[[Block; CHUNK_SIZE as usize]; CHUNK_SIZE as usize]; CHUNK_SIZE as usize]) -> Self {
+    pub fn new(data: [[[BlockInner; CHUNK_SIZE as usize]; CHUNK_SIZE as usize]; CHUNK_SIZE as usize]) -> Self {
         Self{
             blocks: data,
         }
     }
-    pub fn filled(block: Block) -> Self {
+    pub fn filled(block: BlockInner) -> Self {
         Self::new([[[block; CHUNK_SIZE as usize]; CHUNK_SIZE as usize]; CHUNK_SIZE as usize])
     }
-    pub fn get(&self, pos: BlockVector) -> Option<&Block> {
+    pub fn get(&self, pos: BlockVector) -> Option<&BlockInner> {
         if pos.fits() {
             unsafe {
                 Some(self.get_unchecked(pos))
@@ -59,12 +59,12 @@ impl ChunkData {
         }
     }
 
-    pub unsafe fn get_unchecked(&self, pos: BlockVector) -> &Block {
+    pub unsafe fn get_unchecked(&self, pos: BlockVector) -> &BlockInner {
         self.blocks.get_unchecked(pos.x as usize)
             .get_unchecked(pos.y as usize)
             .get_unchecked(pos.z as usize)
     }
-    pub fn get_mut(&mut self, pos: BlockVector) -> Option<&mut Block> {
+    pub fn get_mut(&mut self, pos: BlockVector) -> Option<&mut BlockInner> {
         if pos.fits() {
             unsafe {
                 Some(self.get_unchecked_mut(pos))
@@ -73,22 +73,22 @@ impl ChunkData {
             None
         }
     }
-    pub unsafe fn get_unchecked_mut<'a>(&'a mut self, pos: BlockVector) -> &'a mut Block {
+    pub unsafe fn get_unchecked_mut<'a>(&'a mut self, pos: BlockVector) -> &'a mut BlockInner {
         self.blocks.get_unchecked_mut(pos.x as usize)
             .get_unchecked_mut(pos.y as usize)
             .get_unchecked_mut(pos.z as usize)
     }
-    pub fn clear(&mut self, pos: BlockVector) -> Block {
+    pub fn clear(&mut self, pos: BlockVector) -> BlockInner {
         replace(&mut self.get_mut(pos).unwrap(), AIR)
     }
-    pub fn iter(&self) -> impl Iterator<Item = (BlockVector, &Block)> {
+    pub fn iter(&self) -> impl Iterator<Item = (BlockVector, &BlockInner)> {
         self.blocks.iter().enumerate()
             .flat_map(|(x, items)|items.iter().enumerate().zip(repeat(x)))
             .flat_map(|((y, items), x)|items.iter().enumerate().zip(repeat((x, y))))
             .map(|((z, block), (x, y))|(BlockVector::new(x as i64, y as i64, z as i64), block))
     }
 
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = (BlockVector, &mut Block)> {
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = (BlockVector, &mut BlockInner)> {
         self.blocks.iter_mut().enumerate()
             .flat_map(|(x, items)|items.iter_mut().enumerate().zip(repeat(x)))
             .flat_map(|((y, items), x)|items.iter_mut().enumerate().zip(repeat((x, y))))
@@ -97,7 +97,7 @@ impl ChunkData {
 }
 
 impl<T: Into<BlockVector>> Index<T> for ChunkData {
-    type Output = Block;
+    type Output = BlockInner;
 
     fn index(&self, index: T) -> &Self::Output {
         let pos = index.into();
@@ -119,10 +119,20 @@ impl<T: Into<BlockVector>> IndexMut<T> for ChunkData {
 }
 
 fn chunk_loader(position: ChunkPosition) -> ChunkData {
-    if position.y > 0 {
+    if position.y != 0 {
         ChunkData::filled(AIR)
     } else {
-        ChunkData::filled(GROUND)
+        let mut chunk = ChunkData::filled(GRASS);
+        for (position , block) in chunk.iter_mut() {
+            *block = if position.y == 15 {
+                GRASS
+            } else if position.y > 9 {
+                DIRT
+            } else {
+                STONE
+            };
+        }
+        chunk
     }
 }
 
@@ -211,11 +221,11 @@ impl ChunkManager {
     pub fn update(&mut self, commands: &mut Commands, meshes: ResMut<Assets<Mesh>>, new_position: ChunkPosition) {
 
     }
-    pub fn get<'a>(&self, position: BlockPosition, query: &'a Query<(&Chunk,)>) -> Option<&'a Block> {
+    pub fn get<'a>(&self, position: BlockPosition, query: &'a Query<(&Chunk,)>) -> Option<&'a BlockInner> {
         let (block, chunk) = position.local();
         unsafe {Some(query.get_component::<Chunk>(*self.chunks.get(&chunk)?).ok()?.data.get_unchecked(block))}
     }
-    pub fn get_with_mut<'a>(&self, position: BlockPosition, query: &'a mut Query<(&mut Chunk,)>) -> Option<&'a Block> {
+    pub fn get_with_mut<'a>(&self, position: BlockPosition, query: &'a mut Query<(&mut Chunk,)>) -> Option<&'a BlockInner> {
         let (block, chunk) = position.local();
         unsafe {Some(query.get_component::<Chunk>(*self.chunks.get(&chunk)?).ok()?.data.get_unchecked(block))}
     }
@@ -228,7 +238,7 @@ impl ChunkManager {
             position: block,
         })
     }
-    pub fn set(&mut self, position: BlockPosition, block: Block, query: &mut Query<(&mut Chunk,)>) {
+    pub fn set(&mut self, position: BlockPosition, block: BlockInner, query: &mut Query<(&mut Chunk,)>) {
         if let Some(mut block_ref) = self.get_mut(position, query) {
             *block_ref = block;
 
@@ -295,7 +305,7 @@ pub struct MutBlock<'a> {
 }
 
 impl<'a> Deref for MutBlock<'a> {
-    type Target = Block;
+    type Target = BlockInner;
 
     fn deref(&self) -> &Self::Target {
         unsafe {&self.inner.data.get_unchecked(self.position)}

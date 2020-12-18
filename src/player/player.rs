@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy::input::mouse::{MouseMotion, MouseButtonInputState};
 use crate::physics::Ray;
 use crate::world::chunk::{Chunk, ChunkManager};
-use crate::world::block::{AIR, GROUND};
+use crate::world::block_inner::AIR;
 
 pub struct PlayerMovement {
     /// The speed the FlyCamera moves at. Defaults to `1.0`
