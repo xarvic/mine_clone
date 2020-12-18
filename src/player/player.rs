@@ -1,8 +1,5 @@
 use bevy::prelude::*;
 use bevy::input::mouse::MouseMotion;
-use bevy_rapier3d::rapier::dynamics::{RigidBodySet, RigidBodyHandle};
-use bevy_rapier3d::rapier::na::Vector3;
-use bevy_rapier3d::physics::RigidBodyHandleComponent;
 
 pub struct PlayerMovement {
     /// The speed the FlyCamera moves at. Defaults to `1.0`
@@ -65,7 +62,7 @@ fn forward_vector(rotation: &Quat) -> Vec3 {
 
 fn forward_walk_vector(rotation: &Quat) -> Vec3 {
     let f = forward_vector(rotation);
-    let f_flattened = Vec3::new(f.x(), 0.0, f.z()).normalize();
+    let f_flattened = Vec3::new(f.x, 0.0, f.z).normalize();
     f_flattened
 }
 
@@ -94,68 +91,63 @@ fn movement_axis(
 pub fn camera_movement_system(
     time: Res<Time>,
     keyboard_input: Res<Input<KeyCode>>,
-    mut rigid_bodies: ResMut<RigidBodySet>,
-    mut query: Query<(&mut PlayerMovement, &mut Transform, &mut RigidBodyHandleComponent)>,
+    mut query: Query<(&mut PlayerMovement, &mut Transform)>,
 ) {
-    for (mut options, mut transform, mut rigid_body) in query.iter_mut() {
-        if let Some(rigid_body) = rigid_bodies.get_mut(rigid_body.handle()) {
-            let (axis_h, axis_v, axis_float) = if options.enabled {
-                (
+    for (mut options, mut transform) in query.iter_mut() {
+        let (axis_h, axis_v, axis_float) = if options.enabled {
+            (
 
-                    movement_axis(&keyboard_input, options.key_right, options.key_left),
-                    movement_axis(
-                        &keyboard_input,
-                        options.key_backward,
-                        options.key_forward,
-                    ),
-                    movement_axis(&keyboard_input, options.key_up, options.key_down),
-                )
-            } else {
-                (0.0, 0.0, 0.0)
-            };
+                movement_axis(&keyboard_input, options.key_right, options.key_left),
+                movement_axis(
+                    &keyboard_input,
+                    options.key_backward,
+                    options.key_forward,
+                ),
+                movement_axis(&keyboard_input, options.key_up, options.key_down),
+            )
+        } else {
+            (0.0, 0.0, 0.0)
+        };
 
-            let rotation = transform.rotation;
-            let accel: Vec3 = (strafe_vector(&rotation) * axis_h)
-                + (forward_vector(&rotation) * axis_v)
-                + (Vec3::unit_y() * axis_float);
-            let accel: Vec3 = if accel.length() != 0.0 {
-                accel.normalize() * options.speed
-            } else {
-                Vec3::zero()
-            };
+        let rotation = transform.rotation;
+        let accel: Vec3 = (strafe_vector(&rotation) * axis_h)
+            + (forward_vector(&rotation) * axis_v)
+            + (Vec3::unit_y() * axis_float);
+        let accel: Vec3 = if accel.length() != 0.0 {
+            accel.normalize() * options.speed
+        } else {
+            Vec3::zero()
+        };
 
-            let friction: Vec3 = if options.velocity.length() != 0.0 {
-                options.velocity.normalize() * -1.0 * options.friction
-            } else {
-                Vec3::zero()
-            };
+        let friction: Vec3 = if options.velocity.length() != 0.0 {
+            options.velocity.normalize() * -1.0 * options.friction
+        } else {
+            Vec3::zero()
+        };
 
-            //options.velocity += accel * time.delta_seconds;
-            let force = accel * time.delta_seconds;
-            rigid_body.apply_force(Vector3::new(force.x(), force.y(), force.z()), true);
-
-            // clamp within max speed
-            /*if options.velocity.length() > options.max_speed {
-                options.velocity = options.velocity.normalize() * options.max_speed;
-            }*/
-
-            let delta_friction = friction * time.delta_seconds;
-
-            options.velocity = if (options.velocity + delta_friction).signum()
-                != options.velocity.signum()
-            {
-                Vec3::zero()
-            } else {
-                options.velocity + delta_friction
-            };
-
-            //transform.translation += options.velocity;
-
-            options.frames += 1;
-            if options.frames % 30 == 0 {
-                println!("position: {}", transform.translation);
-            }
+        options.frames += 1;
+        if options.frames % 30 == 0 {
+            println!("position: {}", transform.translation);
         }
+
+        options.velocity += accel * time.delta_seconds();
+
+        // clamp within max speed
+        if options.velocity.length() > options.max_speed {
+            options.velocity = options.velocity.normalize() * options.max_speed;
+        }
+
+        let delta_friction = friction * time.delta_seconds();
+
+        options.velocity = if (options.velocity + delta_friction).signum()
+            != options.velocity.signum()
+        {
+            Vec3::zero()
+        } else {
+            options.velocity + delta_friction
+        };
+
+        transform.translation += options.velocity;
     }
 }
 
@@ -182,8 +174,8 @@ pub fn mouse_motion_system(
         if !options.enabled {
             continue;
         }
-        options.yaw -= delta.x() * options.sensitivity * time.delta_seconds;
-        options.pitch += delta.y() * options.sensitivity * time.delta_seconds;
+        options.yaw -= delta.x * options.sensitivity * time.delta_seconds();
+        options.pitch += delta.y * options.sensitivity * time.delta_seconds();
 
         if options.pitch > 89.9 {
             options.pitch = 89.9;

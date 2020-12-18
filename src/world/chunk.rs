@@ -44,9 +44,9 @@ impl ChunkPosition {
 
 impl From<Vec3> for ChunkPosition {
     fn from(vec: Vec3) -> Self {
-        ChunkPosition::new(vec.x() as i64 >> CHUNK_SIZE_EXP,
-                           vec.y() as i64 >> CHUNK_SIZE_EXP,
-                           vec.z() as i64 >> CHUNK_SIZE_EXP)
+        ChunkPosition::new(vec.x as i64 >> CHUNK_SIZE_EXP,
+                           vec.y as i64 >> CHUNK_SIZE_EXP,
+                           vec.z as i64 >> CHUNK_SIZE_EXP)
     }
 }
 
@@ -281,7 +281,7 @@ impl ChunkRegistry {
 
             println!("spawn cube mesh!");
             commands
-                .spawn(PbrComponents {
+                .spawn(PbrBundle {
                     mesh,
                     material: handle,
                     ..Default::default()
@@ -301,18 +301,18 @@ impl ChunkRegistry {
     }
 }
 
-//TODO: mut 'commands: Commands' only works on 0.3 (change to 'commands: &mut Commands' otherwise)!
-pub fn init_chunks(mut commands: Commands,
-                   mut registry: ResMut<ChunkRegistry>,
+pub fn init_chunks(commands: &mut Commands,
                    resources: Res<AssetServer>,
+                   mut registry: ResMut<ChunkRegistry>,
                    mut textures: ResMut<Assets<StandardMaterial>>,
-                   mut meshes: ResMut<Assets<Mesh>>) {
-    registry.init(&mut commands, resources, textures, meshes);
+                   mut meshes: ResMut<Assets<Mesh>>,
+                   ) {
+    registry.init(commands, resources, textures, meshes);
 }
 
-//TODO: mut 'commands: Commands' only works on 0.3 (change to 'commands: &mut Commands' otherwise)!
-pub fn update_chunks(mut commands: Commands,
+pub fn update_chunks(commands: &mut Commands,
                      mut registry: ResMut<ChunkRegistry>,
-                     mut meshes: ResMut<Assets<Mesh>>) {
-    registry.update(&mut commands, meshes, ChunkPosition::new(0, 1, 0));
+                     mut meshes: ResMut<Assets<Mesh>>,
+                     ) {
+    registry.update(commands, meshes, ChunkPosition::new(0, 1, 0));
 }

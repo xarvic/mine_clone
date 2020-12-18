@@ -9,15 +9,17 @@ use anyhow::Result;
 use crate::settings::Settings;
 use std::io::{BufReader, BufWriter};
 use std::fs::File;
+use crate::physics::{Ray, Quader};
+use bevy::math::Vec3;
 
-mod engine;
-mod renderer;
-mod world;
-mod player;
-mod controller;
-mod util;
-mod settings;
-mod physics;
+pub mod engine;
+pub mod renderer;
+pub mod world;
+pub mod player;
+pub mod controller;
+pub mod util;
+pub mod settings;
+pub mod physics;
 
 fn load_settings() -> Result<Settings> {
     Ok(match serde_json::from_reader(BufReader::new(File::open("./settings.json")?)) {
@@ -41,11 +43,17 @@ fn load_settings() -> Result<Settings> {
 }
 
 fn main() -> Result<()>{
-    let settings = load_settings()?;
+    /*let settings = load_settings()?;
 
     let engine = load_engine(settings);
 
-    engine.run();
+    engine.run();*/
+
+    let ray = Ray::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(4.0, 3.0, 0.0));
+
+    let collider = Quader::new(Vec3::new(0.0, -1.0, -1.0), Vec3::new(8.0, 3.0, 1.0));
+
+    println!("intersect: {:?}", ray.hit_info(&collider));
 
     Ok(())
 }

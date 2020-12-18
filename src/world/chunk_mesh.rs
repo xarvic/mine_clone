@@ -81,7 +81,7 @@ pub fn create_chunk_mesh(chunk: &Chunk) -> Mesh {
             if chunk_data.get(position.x(1)).map_or(true, |block|!block.info.contains(BLOCK_MESH)) {
                 create_face(&mut verticies, &mut indices, &mut normals, &mut uvs,
                             Vec3::new(1.0, 0.0, 0.0),
-                            Vec3::new(heigher.x(), heigher.y(), heigher.z()), Vec3::new(0.0, 0.0, -1.0), Vec3::new(0.0, -1.0, 0.0),
+                            Vec3::new(heigher.x, heigher.y, heigher.z), Vec3::new(0.0, 0.0, -1.0), Vec3::new(0.0, -1.0, 0.0),
                             16, 3
                 );
             }
@@ -89,7 +89,7 @@ pub fn create_chunk_mesh(chunk: &Chunk) -> Mesh {
             if chunk_data.get(position.z(1)).map_or(true, |block|!block.info.contains(BLOCK_MESH)) {
                 create_face(&mut verticies, &mut indices, &mut normals, &mut uvs,
                             Vec3::new(0.0, 0.0, 1.0),
-                            Vec3::new(lower.x(), heigher.y(), heigher.z()), Vec3::new(1.0, 0.0, 0.0), Vec3::new(0.0, -1.0, 0.0),
+                            Vec3::new(lower.x, heigher.y, heigher.z), Vec3::new(1.0, 0.0, 0.0), Vec3::new(0.0, -1.0, 0.0),
                             16, 3
                 );
             }
@@ -105,7 +105,7 @@ pub fn create_chunk_mesh(chunk: &Chunk) -> Mesh {
             if chunk_data.get(position.x(-1)).map_or(true, |block|!block.info.contains(BLOCK_MESH)) {
                 create_face(&mut verticies, &mut indices, &mut normals, &mut uvs,
                             Vec3::new(0.0, 0.0, 1.0),
-                            Vec3::new(lower.x(), heigher.y(), lower.z()), Vec3::new(0.0, 0.0, 1.0), Vec3::new(0.0, -1.0, 0.0),
+                            Vec3::new(lower.x, heigher.y, lower.z), Vec3::new(0.0, 0.0, 1.0), Vec3::new(0.0, -1.0, 0.0),
                             16, 3
                 );
             }
@@ -113,7 +113,7 @@ pub fn create_chunk_mesh(chunk: &Chunk) -> Mesh {
             if chunk_data.get(position.z(-1)).map_or(true, |block|!block.info.contains(BLOCK_MESH)) {
                 create_face(&mut verticies, &mut indices, &mut normals, &mut uvs,
                             Vec3::new(0.0, 0.0, 1.0),
-                            Vec3::new(heigher.x(), heigher.y(), lower.z()), Vec3::new(-1.0, 0.0, 0.0), Vec3::new(0.0, -1.0, 0.0),
+                            Vec3::new(heigher.x, heigher.y, lower.z), Vec3::new(-1.0, 0.0, 0.0), Vec3::new(0.0, -1.0, 0.0),
                             16, 3
                 );
             }

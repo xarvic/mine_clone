@@ -5,7 +5,6 @@ use crate::world::init_world;
 use crate::renderer::init_rendering;
 use bevy::app::App;
 use bevy::render::render_graph::base::Msaa;
-use bevy_rapier3d::physics::RapierPhysicsPlugin;
 
 pub fn load_engine(settings: Settings) -> App {
 
@@ -13,7 +12,6 @@ pub fn load_engine(settings: Settings) -> App {
     //MSaa hast to be the first resource
     builder.add_resource(Msaa { samples: settings.render_settings.msaa_samples });
     builder.add_plugins(DefaultPlugins);
-    builder.add_plugin(RapierPhysicsPlugin);
 
     //Add Player
     init_player(&mut builder, &settings);

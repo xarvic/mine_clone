@@ -14,11 +14,7 @@ serde_json = "1.0"
 itertools = "0.9"
 clap = "*"
 
-# Bevy on 13.12.2020
-#bevy = {git = "https://github.com/bevyengine/bevy.git", ref = "097a55948cf85aae1c9cd35503155a41e032803e"}
-
-bevy = "0.3.0"
-bevy_rapier3d = "0.6.2"
+bevy = {git = "https://github.com/bevyengine/bevy.git", ref = "097a55948cf85aae1c9cd35503155a41e032803e"}
 
 #[profile.release]
 #lto = true
