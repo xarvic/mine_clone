@@ -21,13 +21,15 @@ impl Default for RenderSettings {
 
 #[derive(Clone, Hash, Debug, Serialize, Deserialize)]
 pub struct GameSettings {
-
+    pub print_fps: bool,
+    pub print_position: bool,
 }
 
 impl Default for GameSettings {
     fn default() -> Self {
         GameSettings {
-
+            print_position: false,
+            print_fps: false,
         }
     }
 }

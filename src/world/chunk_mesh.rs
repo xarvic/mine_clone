@@ -64,13 +64,14 @@ pub fn create_chunk_mesh(chunk: &Chunk) -> Mesh {
 
     for (position, block) in chunk_data.iter() {
         if block.info.contains(BLOCK_MESH) {
-            let lower = chunk.position + position;
-            let heigher = lower + Vec3::new(1.0, 1.0, 1.0);
+            let global_position = chunk.position + position;
+            let lower= global_position.lower_corner();
+            let heigher = global_position.higher_corner();
 
             //println!("build block: {:?}", position);
 
             //Up
-            if chunk_data.get(position.y(1)).map_or(true, |block|!block.info.contains(BLOCK_MESH)) {
+            if chunk_data.get(position.with_y(1)).map_or(true, |block|!block.info.contains(BLOCK_MESH)) {
                 create_face(&mut verticies, &mut indices, &mut normals, &mut uvs,
                             Vec3::new(0.0, 1.0, 0.0),
                             heigher, Vec3::new(-1.0, 0.0, 0.0), Vec3::new(0.0, 0.0, -1.0),
@@ -78,7 +79,7 @@ pub fn create_chunk_mesh(chunk: &Chunk) -> Mesh {
                 );
             }
             //side 1
-            if chunk_data.get(position.x(1)).map_or(true, |block|!block.info.contains(BLOCK_MESH)) {
+            if chunk_data.get(position.with_x(1)).map_or(true, |block|!block.info.contains(BLOCK_MESH)) {
                 create_face(&mut verticies, &mut indices, &mut normals, &mut uvs,
                             Vec3::new(1.0, 0.0, 0.0),
                             Vec3::new(heigher.x, heigher.y, heigher.z), Vec3::new(0.0, 0.0, -1.0), Vec3::new(0.0, -1.0, 0.0),
@@ -86,7 +87,7 @@ pub fn create_chunk_mesh(chunk: &Chunk) -> Mesh {
                 );
             }
             //side 2
-            if chunk_data.get(position.z(1)).map_or(true, |block|!block.info.contains(BLOCK_MESH)) {
+            if chunk_data.get(position.with_z(1)).map_or(true, |block|!block.info.contains(BLOCK_MESH)) {
                 create_face(&mut verticies, &mut indices, &mut normals, &mut uvs,
                             Vec3::new(0.0, 0.0, 1.0),
                             Vec3::new(lower.x, heigher.y, heigher.z), Vec3::new(1.0, 0.0, 0.0), Vec3::new(0.0, -1.0, 0.0),
@@ -94,7 +95,7 @@ pub fn create_chunk_mesh(chunk: &Chunk) -> Mesh {
                 );
             }
             //Down
-            if chunk_data.get(position.y(-1)).map_or(true, |block|!block.info.contains(BLOCK_MESH)) {
+            if chunk_data.get(position.with_y(-1)).map_or(true, |block|!block.info.contains(BLOCK_MESH)) {
                 create_face(&mut verticies, &mut indices, &mut normals, &mut uvs,
                             Vec3::new(0.0, -1.0, 0.0),
                             lower, Vec3::new(0.0, 0.0, 1.0), Vec3::new(1.0, 0.0, 0.0),
@@ -102,7 +103,7 @@ pub fn create_chunk_mesh(chunk: &Chunk) -> Mesh {
                 );
             }
             //side -1
-            if chunk_data.get(position.x(-1)).map_or(true, |block|!block.info.contains(BLOCK_MESH)) {
+            if chunk_data.get(position.with_x(-1)).map_or(true, |block|!block.info.contains(BLOCK_MESH)) {
                 create_face(&mut verticies, &mut indices, &mut normals, &mut uvs,
                             Vec3::new(0.0, 0.0, 1.0),
                             Vec3::new(lower.x, heigher.y, lower.z), Vec3::new(0.0, 0.0, 1.0), Vec3::new(0.0, -1.0, 0.0),
@@ -110,7 +111,7 @@ pub fn create_chunk_mesh(chunk: &Chunk) -> Mesh {
                 );
             }
             //side -2
-            if chunk_data.get(position.z(-1)).map_or(true, |block|!block.info.contains(BLOCK_MESH)) {
+            if chunk_data.get(position.with_z(-1)).map_or(true, |block|!block.info.contains(BLOCK_MESH)) {
                 create_face(&mut verticies, &mut indices, &mut normals, &mut uvs,
                             Vec3::new(0.0, 0.0, 1.0),
                             Vec3::new(heigher.x, heigher.y, lower.z), Vec3::new(-1.0, 0.0, 0.0), Vec3::new(0.0, -1.0, 0.0),
@@ -130,4 +131,3 @@ pub fn create_chunk_mesh(chunk: &Chunk) -> Mesh {
 
     mesh
 }
-

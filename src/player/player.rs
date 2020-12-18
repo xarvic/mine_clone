@@ -1,5 +1,8 @@
 use bevy::prelude::*;
-use bevy::input::mouse::MouseMotion;
+use bevy::input::mouse::{MouseMotion, MouseButtonInputState};
+use crate::physics::Ray;
+use crate::world::chunk::{Chunk, ChunkManager};
+use crate::world::block::{AIR, GROUND};
 
 pub struct PlayerMovement {
     /// The speed the FlyCamera moves at. Defaults to `1.0`
@@ -31,11 +34,13 @@ pub struct PlayerMovement {
     /// If `false`, disable keyboard control of the camera. Defaults to `true`
     pub enabled: bool,
 
+    pub print_position: bool,
+
     pub frames: u64,
 }
 
 impl PlayerMovement {
-    pub fn new() -> Self {
+    pub fn new(print_position: bool) -> Self {
         PlayerMovement {
             speed: 1.5,
             max_speed: 0.5,
@@ -51,6 +56,7 @@ impl PlayerMovement {
             key_up: KeyCode::Space,
             key_down: KeyCode::LShift,
             enabled: true,
+            print_position,
             frames: 0,
         }
     }
@@ -126,7 +132,7 @@ pub fn camera_movement_system(
         };
 
         options.frames += 1;
-        if options.frames % 30 == 0 {
+        if options.frames % 30 == 0 && options.print_position {
             println!("position: {}", transform.translation);
         }
 
@@ -154,6 +160,7 @@ pub fn camera_movement_system(
 #[derive(Default)]
 pub struct MouseState {
     mouse_motion_event_reader: EventReader<MouseMotion>,
+    press: MouseButtonInputState
 }
 
 pub fn mouse_motion_system(
@@ -166,6 +173,7 @@ pub fn mouse_motion_system(
     for event in state.mouse_motion_event_reader.iter(&mouse_motion_events) {
         delta += event.delta;
     }
+
     if delta == Vec2::zero() {
         return;
     }
@@ -174,6 +182,8 @@ pub fn mouse_motion_system(
         if !options.enabled {
             continue;
         }
+
+
         options.yaw -= delta.x * options.sensitivity * time.delta_seconds();
         options.pitch += delta.y * options.sensitivity * time.delta_seconds();
 
@@ -190,5 +200,31 @@ pub fn mouse_motion_system(
 
         transform.rotation = Quat::from_axis_angle(Vec3::unit_y(), yaw_radians)
             * Quat::from_axis_angle(-Vec3::unit_x(), pitch_radians);
+    }
+}
+
+pub fn player_interact(
+    mouse_motion_events: Res<Input<MouseButton>>,
+    mut chunk_manager: ResMut<ChunkManager>,
+    player: Query<(&PlayerMovement, &Transform)>,
+    mut chunks: Query<(&mut Chunk,)>
+) {
+    if mouse_motion_events.just_released(MouseButton::Left) {
+        for (player, transform) in player.iter() {
+            let ray = Ray::from_global_transform(transform);
+
+            let block = ray.grid_snap().take(20)
+                .filter_map(|position|{
+                    if chunk_manager.get_with_mut(position, &mut chunks)? != &AIR {
+                        Some(position)
+                    } else {
+                        None
+                    }
+                }).next();
+            if let Some(block) = block {
+                println!("update chunk!");
+                chunk_manager.set(block, AIR, &mut chunks);
+            }
+        }
     }
 }

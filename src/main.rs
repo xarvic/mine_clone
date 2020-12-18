@@ -9,8 +9,8 @@ use anyhow::Result;
 use crate::settings::Settings;
 use std::io::{BufReader, BufWriter};
 use std::fs::File;
-use crate::physics::{Ray, Quader};
-use bevy::math::Vec3;
+
+#[macro_use] extern crate impl_ops;
 
 pub mod engine;
 pub mod renderer;
@@ -43,17 +43,11 @@ fn load_settings() -> Result<Settings> {
 }
 
 fn main() -> Result<()>{
-    /*let settings = load_settings()?;
+    let settings = load_settings()?;
 
     let engine = load_engine(settings);
 
-    engine.run();*/
-
-    let ray = Ray::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(4.0, 3.0, 0.0));
-
-    let collider = Quader::new(Vec3::new(0.0, -1.0, -1.0), Vec3::new(8.0, 3.0, 1.0));
-
-    println!("intersect: {:?}", ray.hit_info(&collider));
+    engine.run();
 
     Ok(())
 }

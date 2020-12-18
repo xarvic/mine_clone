@@ -2,5 +2,8 @@
   "render_settings": {
     "msaa_samples": 4
   },
-  "game_settings": {}
+  "game_settings": {
+    "print_fps": false,
+    "print_position": false
+  }
 }
