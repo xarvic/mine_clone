@@ -1,7 +1,3 @@
-use bevy::ecs::{Query, Res};
-use crate::entities::entity::Object;
-use bevy::prelude::Transform;
-use crate::world::chunk::{Chunk, ChunkManager};
 use std::ops::Range;
 
 fn interval(low: f32, high: f32) -> Range<i64> {
