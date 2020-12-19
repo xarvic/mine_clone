@@ -286,6 +286,15 @@ impl ChunkPosition {
         new.z += z;
         new
     }
+    pub fn lowest(&self) -> BlockPosition {
+        *self + BlockVector::new(0, 0, 0)
+    }
+    pub fn highest(&self) -> BlockPosition {
+        *self + BlockVector::new(MAX_CHILD, MAX_CHILD, MAX_CHILD)
+    }
+    pub fn center(&self) -> Vec3 {
+        (*self + BlockVector::new(MAX_CHILD / 2, MAX_CHILD / 2, MAX_CHILD / 2)).higher_corner()
+    }
 }
 
 impl From<Vec3> for ChunkPosition {

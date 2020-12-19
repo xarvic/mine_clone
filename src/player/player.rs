@@ -117,7 +117,7 @@ pub fn camera_movement_system(
 
         let rotation = transform.rotation;
         let accel: Vec3 = (strafe_vector(&rotation) * axis_h)
-            + (forward_vector(&rotation) * axis_v)
+            + (forward_walk_vector(&rotation) * axis_v)
             + (Vec3::unit_y() * axis_float);
         let accel: Vec3 = if accel.length() != 0.0 {
             accel.normalize() * options.speed

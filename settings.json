@@ -3,7 +3,9 @@
     "msaa_samples": 4
   },
   "game_settings": {
-    "print_fps": false,
-    "print_position": false
+    "print_fps": true,
+    "print_position": false,
+    "load_distance": 6,
+    "unload_distance": 8
   }
 }

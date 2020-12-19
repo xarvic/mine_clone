@@ -2,7 +2,6 @@ use crate::world::block_inner::{BlockInner, AIR, GRASS, DIRT, STONE};
 use crate::world::chunk_mesh::create_chunk_mesh;
 
 use std::mem::replace;
-use std::time::Instant;
 use std::ops::{Index, IndexMut};
 use itertools::__std_iter::repeat;
 use std::collections::HashMap;
@@ -11,6 +10,8 @@ use bevy::prelude::*;
 use crate::world::coordinates::{ChunkPosition, BlockVector, CHUNK_SIZE, BlockPosition, MAX_CHILD};
 use std::collections::HashSet;
 use std::ops::{Deref, DerefMut};
+use crate::player::player::PlayerMovement;
+use itertools::Itertools;
 
 
 pub struct Chunk {
@@ -27,12 +28,7 @@ pub struct Chunk {
 }
 
 impl Chunk {
-    pub fn lowest(&self) -> BlockPosition {
-        self.position + BlockVector::new(0, 0, 0)
-    }
-    pub fn highest(&self) -> BlockPosition {
-        self.position + BlockVector::new(MAX_CHILD, MAX_CHILD, MAX_CHILD)
-    }
+
 }
 
 #[derive(Clone)]
@@ -143,10 +139,11 @@ pub struct ChunkManager {
     chunk_discard_distance: f32,
     texture_atlas: Option<Handle<StandardMaterial>>,
     chunk_rerender: HashSet<ChunkPosition>,
+    current_meshes: isize,
 }
 
 impl ChunkManager {
-    pub fn new(current_position: ChunkPosition, chunk_loading_distance: u32, chunk_discard_distance: u32) -> Self {
+    pub fn new(current_position: ChunkPosition, chunk_loading_distance: f32, chunk_discard_distance: f32) -> Self {
         Self {
             chunks: HashMap::new(),
             player_chunk: current_position,
@@ -154,6 +151,7 @@ impl ChunkManager {
             chunk_discard_distance: chunk_discard_distance as f32,
             texture_atlas: None,
             chunk_rerender: HashSet::new(),
+            current_meshes: 0,
         }
     }
     fn init(&mut self, commands: &mut Commands,
@@ -173,50 +171,38 @@ impl ChunkManager {
         let material_handle = materials.add(material);
 
         self.texture_atlas = Some(material_handle);
-
-        self.load_chunk(commands, &mut meshes, ChunkPosition::new(0, 0, 0), true);
-        self.load_chunk(commands, &mut meshes, ChunkPosition::new(1, 0, 0), true);
-        self.load_chunk(commands, &mut meshes, ChunkPosition::new(0, 0, 1), true);
-        self.load_chunk(commands, &mut meshes, ChunkPosition::new(1, 0, 1), true);
     }
-    fn load_chunk(&mut self, commands: &mut Commands, meshes: &mut ResMut<Assets<Mesh>>, chunk_position: ChunkPosition, rendered: bool) {
+    fn load_chunk(&mut self, commands: &mut Commands, chunk_position: ChunkPosition) -> Entity {
         let chunk_data = chunk_loader(chunk_position);
 
         let chunk = Chunk {
             position: chunk_position,
             data: chunk_data,
 
-            x_positive: self.chunks.get(&chunk_position.with_x( 1)).cloned(),
+            /*x_positive: self.chunks.get(&chunk_position.with_x( 1)).cloned(),
             x_negative: self.chunks.get(&chunk_position.with_x(-1)).cloned(),
             y_positive: self.chunks.get(&chunk_position.with_y( 1)).cloned(),
             y_negative: self.chunks.get(&chunk_position.with_y(-1)).cloned(),
             z_positive: self.chunks.get(&chunk_position.with_z( 1)).cloned(),
-            z_negative: self.chunks.get(&chunk_position.with_z(-1)).cloned(),
+            z_negative: self.chunks.get(&chunk_position.with_z(-1)).cloned(),*/
+            x_positive: None,
+            x_negative: None,
+            y_positive: None,
+            y_negative: None,
+            z_positive: None,
+            z_negative: None
         };
 
-        let entity = if rendered {
-            let start = Instant::now();
-            let mesh = meshes.add(create_chunk_mesh(&chunk));
-            println!("created mesh in {} sec. !", start.elapsed().as_secs_f32());
-
-            let handle = self.texture_atlas.clone().unwrap();
-
-            println!("spawn cube mesh!");
-            commands
-                .spawn(PbrBundle {
-                    mesh,
-                    material: handle,
-                    ..Default::default()
-                })
-                .with(chunk);
-            commands.current_entity().unwrap()//We just inserted one, this should be ok
-        } else {
-
-            commands.spawn((chunk,));
-            commands.current_entity().unwrap()
-        };
-
+        commands
+            .spawn(PbrBundle{
+                material: self.texture_atlas.as_ref().unwrap().clone(),
+                ..PbrBundle::default()
+            })
+            .with(chunk);
+        let entity = commands.current_entity().unwrap();
         self.chunks.insert(chunk_position, entity);
+
+        entity
     }
     pub fn update(&mut self, commands: &mut Commands, meshes: ResMut<Assets<Mesh>>, new_position: ChunkPosition) {
 
@@ -327,21 +313,149 @@ pub fn init_chunks(commands: &mut Commands,
     registry.init(commands, resources, textures, meshes);
 }
 
+pub fn update_chunk_scope(
+    commands: &mut Commands,
+    mut manager: ResMut<ChunkManager>,
+    mut chunks: Query<(&mut Chunk,)>,
+    player: Query<(&Transform, &PlayerMovement)>,
+) {
+    for (transform, options) in player.iter() {
+        manager.player_chunk = ChunkPosition::from(transform.translation);
+
+        let load_dist = manager.chunk_loading_distance as i64;
+
+        let mut load = Vec::new();
+
+        let mut load_dist_square = manager.chunk_loading_distance * CHUNK_SIZE as f32;
+        load_dist_square *= load_dist_square;
+
+        (-load_dist..=load_dist)
+            .cartesian_product(-load_dist..=load_dist)
+            .cartesian_product(-load_dist..=load_dist)
+            .map(|((x, y), z)| {
+                manager.player_chunk.with_x(x).with_y(y).with_z(z)
+            }).for_each(|position| {
+            if position.center().distance_squared(transform.translation) < load_dist_square && !manager.chunks.contains_key(&position) {
+                load.push(position);
+            }
+        });
+
+        for position in load.iter() {
+            manager.load_chunk(commands, *position);
+        }
+
+        let unload_dist_square = manager.chunk_discard_distance *
+            manager.chunk_discard_distance *
+            CHUNK_SIZE as f32 *
+            CHUNK_SIZE as f32;
+
+        for (mut chunk,) in chunks.iter_mut() {
+
+            if chunk.position.center().distance_squared(transform.translation) >= unload_dist_square {
+                commands.despawn(manager.chunks.remove(&chunk.position).unwrap());
+            } else {
+                let mut changed = false;
+                let mut complete = true;
+
+                if chunk.x_negative.is_none() {
+                    if let Some(adjacent) = manager.chunks
+                        .get(&chunk.position.with_x(-1))
+                    {
+                        chunk.x_negative = Some(*adjacent);
+                        changed = true;
+                    } else {
+                        complete = false;
+                    }
+                }
+                if chunk.x_positive.is_none() {
+                    if let Some(adjacent) = manager.chunks
+                        .get(&chunk.position.with_x(1))
+                    {
+                        chunk.x_positive = Some(*adjacent);
+                        changed = true;
+                    } else {
+                        complete = false;
+                    }
+                }
+                if chunk.y_negative.is_none() {
+                    if let Some(adjacent) = manager.chunks
+                        .get(&chunk.position.with_y(-1))
+                    {
+                        chunk.y_negative = Some(*adjacent);
+                        changed = true;
+                    } else {
+                        complete = false;
+                    }
+                }
+                if chunk.y_positive.is_none() {
+                    if let Some(adjacent) = manager.chunks
+                        .get(&chunk.position.with_y(1))
+                    {
+                        chunk.y_positive = Some(*adjacent);
+                        changed = true;
+                    } else {
+                        complete = false;
+                    }
+                }
+                if chunk.z_negative.is_none() {
+                    if let Some(adjacent) = manager.chunks
+                        .get(&chunk.position.with_z(-1))
+                    {
+                        chunk.z_negative = Some(*adjacent);
+                        changed = true;
+                    }
+                }
+                if chunk.z_positive.is_none() {
+                    if let Some(adjacent) = manager.chunks
+                        .get(&chunk.position.with_z(1))
+                    {
+                        chunk.z_positive = Some(*adjacent);
+                        changed = true;
+                    } else {
+                        complete = false;
+                    }
+                }
+
+                if changed && complete {
+                    manager.chunk_rerender.insert(chunk.position);
+                }
+            }
+        }
+    }
+}
+
 pub fn update_chunk_mesh(
     mut meshes: ResMut<Assets<Mesh>>,
     mut manager: ResMut<ChunkManager>,
     mut query: Query<(&Chunk, &mut Handle<Mesh>)>
 ) {
-    for position in manager.chunk_rerender.iter() {
-        if let Some((chunk, mut handle)) = manager.chunks
-            .get(position)
-            .and_then(|chunk|query.get_mut(*chunk).ok())
-        {
-            meshes.remove(handle.clone());
-            let mesh = create_chunk_mesh(chunk);
-            *handle = meshes.add(mesh);
-            println!("update chunk mesh!");
+    let mut change = 0;
+    unsafe {
+        for position in manager.chunk_rerender.iter() {
+            if let Some(entity) = manager.chunks
+                .get(position) {
+                if let Ok((chunk, mut handle)) = query.get_unsafe(*entity) {
+                    //This is ok, we are only accsessing further Chunks immutably
+                    if handle.is_strong() {
+                        meshes.remove(handle.clone());
+                        change -= 1;
+                    }
+                    let mesh = create_chunk_mesh(chunk, &query);
+                    if let Some(mesh) = mesh {
+                        // Some -> Some just update the mesh
+                        *handle = meshes.add(mesh);
+                        change += 1;
+                    } else {
+                        // Some -> None remove the mesh
+                        *handle = Handle::default();
+                    }
+                }
+            } else {
+                //Error the component map contains an invalid entity
+                eprintln!("\033[34mTried to update a non exsiting chunk!\033[0m");
+            }
         }
     }
+    manager.current_meshes += change;
     manager.chunk_rerender.clear();
 }

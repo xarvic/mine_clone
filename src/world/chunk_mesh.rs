@@ -3,6 +3,7 @@ use crate::world::chunk::Chunk;
 use bevy::render::pipeline::PrimitiveTopology;
 use bevy::prelude::*;
 use crate::world::block_inner::{BLOCK_MESH, TEXTURES, BlockLook, Side};
+use crate::world::coordinates::BlockVector;
 
 #[inline(always)]
 fn create_face(verticies: &mut Vec<[f32; 3]>, indices: &mut Vec<u16>, normals: &mut Vec<[f32; 3]>, uvs: &mut Vec<[f32; 2]>,
@@ -54,13 +55,31 @@ fn create_face(verticies: &mut Vec<[f32; 3]>, indices: &mut Vec<u16>, normals: &
     indices.push(next_index + 3);
 }
 
-pub fn create_chunk_mesh(chunk: &Chunk) -> Mesh {
+pub fn create_chunk_mesh(chunk: &Chunk, query: &Query<(&Chunk, &mut Handle<Mesh>)>) -> Option<Mesh> {
     let mut verticies = Vec::new();
     let mut normals = Vec::new();
     let mut indices = Vec::new();
     let mut uvs = Vec::new();
 
     let chunk_data = &chunk.data;
+
+    let x_positive = chunk.x_positive.and_then(|entity|Some(query.get_component(entity).ok()?));
+    let x_negative = chunk.x_negative.and_then(|entity|Some(query.get_component(entity).ok()?));
+    let y_positive = chunk.y_positive.and_then(|entity|Some(query.get_component(entity).ok()?));
+    let y_negative = chunk.y_negative.and_then(|entity|Some(query.get_component(entity).ok()?));
+    let z_positive = chunk.z_positive.and_then(|entity|Some(query.get_component(entity).ok()?));
+    let z_negative = chunk.z_negative.and_then(|entity|Some(query.get_component(entity).ok()?));
+
+    let check_block_face = |position: BlockVector, adjacent: Option<&Chunk>| -> bool {
+        unsafe {
+            if position.fits() {
+                !chunk_data.get_unchecked(position).info.contains(BLOCK_MESH)
+            } else {
+                adjacent.map(|chunk| chunk.data.get_unchecked(position.chunk_relative()))
+                    .map_or(true, |block|!block.info.contains(BLOCK_MESH))
+            }
+        }
+    };
 
     for (position, block) in chunk_data.iter() {
         if let BlockLook::Faces{ref textures } = TEXTURES[block.btype as usize] {
@@ -72,7 +91,7 @@ pub fn create_chunk_mesh(chunk: &Chunk) -> Mesh {
             //println!("build block: {:?}", position);
 
             //Up
-            if chunk_data.get(position.with_y(1)).map_or(true, |block|!block.info.contains(BLOCK_MESH)) {
+            if check_block_face(position.with_y(1), y_positive) {
                 create_face(&mut verticies, &mut indices, &mut normals, &mut uvs,
                             Vec3::new(0.0, 1.0, 0.0),
                             heigher, Vec3::new(-1.0, 0.0, 0.0), Vec3::new(0.0, 0.0, -1.0),
@@ -80,7 +99,7 @@ pub fn create_chunk_mesh(chunk: &Chunk) -> Mesh {
                 );
             }
             //side 1
-            if chunk_data.get(position.with_x(1)).map_or(true, |block|!block.info.contains(BLOCK_MESH)) {
+            if check_block_face(position.with_x(1), x_positive) {
                 create_face(&mut verticies, &mut indices, &mut normals, &mut uvs,
                             Vec3::new(1.0, 0.0, 0.0),
                             Vec3::new(heigher.x, heigher.y, heigher.z), Vec3::new(0.0, 0.0, -1.0), Vec3::new(0.0, -1.0, 0.0),
@@ -88,7 +107,7 @@ pub fn create_chunk_mesh(chunk: &Chunk) -> Mesh {
                 );
             }
             //side 2
-            if chunk_data.get(position.with_z(1)).map_or(true, |block|!block.info.contains(BLOCK_MESH)) {
+            if check_block_face(position.with_z(1), z_positive) {
                 create_face(&mut verticies, &mut indices, &mut normals, &mut uvs,
                             Vec3::new(0.0, 0.0, 1.0),
                             Vec3::new(lower.x, heigher.y, heigher.z), Vec3::new(1.0, 0.0, 0.0), Vec3::new(0.0, -1.0, 0.0),
@@ -96,7 +115,7 @@ pub fn create_chunk_mesh(chunk: &Chunk) -> Mesh {
                 );
             }
             //Down
-            if chunk_data.get(position.with_y(-1)).map_or(true, |block|!block.info.contains(BLOCK_MESH)) {
+            if check_block_face(position.with_y(-1), y_negative) {
                 create_face(&mut verticies, &mut indices, &mut normals, &mut uvs,
                             Vec3::new(0.0, -1.0, 0.0),
                             lower, Vec3::new(0.0, 0.0, 1.0), Vec3::new(1.0, 0.0, 0.0),
@@ -104,7 +123,7 @@ pub fn create_chunk_mesh(chunk: &Chunk) -> Mesh {
                 );
             }
             //side -1
-            if chunk_data.get(position.with_x(-1)).map_or(true, |block|!block.info.contains(BLOCK_MESH)) {
+            if check_block_face(position.with_x(-1), x_negative) {
                 create_face(&mut verticies, &mut indices, &mut normals, &mut uvs,
                             Vec3::new(0.0, 0.0, 1.0),
                             Vec3::new(lower.x, heigher.y, lower.z), Vec3::new(0.0, 0.0, 1.0), Vec3::new(0.0, -1.0, 0.0),
@@ -112,7 +131,7 @@ pub fn create_chunk_mesh(chunk: &Chunk) -> Mesh {
                 );
             }
             //side -2
-            if chunk_data.get(position.with_z(-1)).map_or(true, |block|!block.info.contains(BLOCK_MESH)) {
+            if check_block_face(position.with_z(-1), z_negative) {
                 create_face(&mut verticies, &mut indices, &mut normals, &mut uvs,
                             Vec3::new(0.0, 0.0, 1.0),
                             Vec3::new(heigher.x, heigher.y, lower.z), Vec3::new(-1.0, 0.0, 0.0), Vec3::new(0.0, -1.0, 0.0),
@@ -121,14 +140,17 @@ pub fn create_chunk_mesh(chunk: &Chunk) -> Mesh {
             }
         }
     }
-    println!("created mesh with {} faces ({} vertices)!", indices.len() / 3, verticies.len());
 
-    let mut mesh = Mesh::new(PrimitiveTopology::TriangleList);
+    if verticies.is_empty() {
+        None
+    } else {
+        let mut mesh = Mesh::new(PrimitiveTopology::TriangleList);
 
-    mesh.set_attribute(Mesh::ATTRIBUTE_POSITION, VertexAttributeValues::Float3(verticies));
-    mesh.set_attribute(Mesh::ATTRIBUTE_NORMAL, VertexAttributeValues::Float3(normals));
-    mesh.set_attribute(Mesh::ATTRIBUTE_UV_0, VertexAttributeValues::Float2(uvs));
-    mesh.set_indices(Some(Indices::U16(indices)));
+        mesh.set_attribute(Mesh::ATTRIBUTE_POSITION, VertexAttributeValues::Float3(verticies));
+        mesh.set_attribute(Mesh::ATTRIBUTE_NORMAL, VertexAttributeValues::Float3(normals));
+        mesh.set_attribute(Mesh::ATTRIBUTE_UV_0, VertexAttributeValues::Float2(uvs));
+        mesh.set_indices(Some(Indices::U16(indices)));
 
-    mesh
+        Some(mesh)
+    }
 }
