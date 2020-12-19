@@ -428,33 +428,32 @@ pub fn update_chunk_scope(
 pub fn update_chunk_mesh(
     mut meshes: ResMut<Assets<Mesh>>,
     mut manager: ResMut<ChunkManager>,
-    mut query: Query<(&Chunk, &mut Handle<Mesh>)>
+    mut chunks: Query<(&Chunk, &mut Handle<Mesh>)>,
+    adjacent: Query<(&Chunk,)>,
 ) {
     let mut change = 0;
-    unsafe {
-        for position in manager.chunk_rerender.iter() {
-            if let Some(entity) = manager.chunks
-                .get(position) {
-                if let Ok((chunk, mut handle)) = query.get_unsafe(*entity) {
-                    //This is ok, we are only accsessing further Chunks immutably
-                    if handle.is_strong() {
-                        meshes.remove(handle.clone());
-                        change -= 1;
-                    }
-                    let mesh = create_chunk_mesh(chunk, &query);
-                    if let Some(mesh) = mesh {
-                        // Some -> Some just update the mesh
-                        *handle = meshes.add(mesh);
-                        change += 1;
-                    } else {
-                        // Some -> None remove the mesh
-                        *handle = Handle::default();
-                    }
+    for position in manager.chunk_rerender.iter() {
+        if let Some(entity) = manager.chunks
+            .get(position) {
+            if let Ok((chunk, mut handle)) = chunks.get_mut(*entity) {
+                //This is ok, we are only accsessing further Chunks immutably
+                if handle.is_strong() {
+                    meshes.remove(handle.clone());
+                    change -= 1;
                 }
-            } else {
-                //Error the component map contains an invalid entity
-                eprintln!("\033[34mTried to update a non exsiting chunk!\033[0m");
+                let mesh = create_chunk_mesh(chunk, &adjacent);
+                if let Some(mesh) = mesh {
+                    // Some -> Some just update the mesh
+                    *handle = meshes.add(mesh);
+                    change += 1;
+                } else {
+                    // Some -> None remove the mesh
+                    *handle = Handle::default();
+                }
             }
+        } else {
+            //Error the component map contains an invalid entity
+            eprintln!("\033[34mTried to update a non exsiting chunk!\033[0m");
         }
     }
     manager.current_meshes += change;

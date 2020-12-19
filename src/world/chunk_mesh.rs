@@ -57,7 +57,7 @@ fn create_face(verticies: &mut Vec<[f32; 3]>, indices: &mut Vec<u16>, normals: &
 
 /// creates a mesh representing the solid blocks of a given chunk
 /// The coordinates are relative to chunk.position.center()
-pub fn create_chunk_mesh(chunk: &Chunk, query: &Query<(&Chunk, &mut Handle<Mesh>)>) -> Option<Mesh> {
+pub fn create_chunk_mesh(chunk: &Chunk, query: &Query<(&Chunk,)>) -> Option<Mesh> {
     let mut verticies = Vec::new();
     let mut normals = Vec::new();
     let mut indices = Vec::new();
