@@ -16,7 +16,7 @@ clap = "*"
 impl_ops = "0.1"
 smallvec = "1.5"
 
-bevy = {git = "https://github.com/bevyengine/bevy.git", ref = "097a55948cf85aae1c9cd35503155a41e032803e"}
+bevy = {git = "https://github.com/bevyengine/bevy.git", ref = "3b2c6ce49b3b9ea8bc5cb68f8d350a80ff928af6"}
 
 #[profile.release]
 #lto = true

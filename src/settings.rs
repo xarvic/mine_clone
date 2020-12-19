@@ -20,6 +20,11 @@ impl Default for RenderSettings {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Controls {
+
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct GameSettings {
     pub print_fps: bool,
     pub print_position: bool,

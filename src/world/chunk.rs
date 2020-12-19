@@ -196,6 +196,7 @@ impl ChunkManager {
         commands
             .spawn(PbrBundle{
                 material: self.texture_atlas.as_ref().unwrap().clone(),
+                transform: Transform::from_translation(chunk_position.center()),
                 ..PbrBundle::default()
             })
             .with(chunk);

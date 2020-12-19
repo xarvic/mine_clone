@@ -55,6 +55,8 @@ fn create_face(verticies: &mut Vec<[f32; 3]>, indices: &mut Vec<u16>, normals: &
     indices.push(next_index + 3);
 }
 
+/// creates a mesh representing the solid blocks of a given chunk
+/// The coordinates are relative to chunk.position.center()
 pub fn create_chunk_mesh(chunk: &Chunk, query: &Query<(&Chunk, &mut Handle<Mesh>)>) -> Option<Mesh> {
     let mut verticies = Vec::new();
     let mut normals = Vec::new();
@@ -81,12 +83,14 @@ pub fn create_chunk_mesh(chunk: &Chunk, query: &Query<(&Chunk, &mut Handle<Mesh>
         }
     };
 
+    let center = chunk.position.center();
+
     for (position, block) in chunk_data.iter() {
         if let BlockLook::Faces{ref textures } = TEXTURES[block.btype as usize] {
 
             let global_position = chunk.position + position;
-            let lower= global_position.lower_corner();
-            let heigher = global_position.higher_corner();
+            let lower= global_position.lower_corner() - center;
+            let heigher = global_position.higher_corner() - center;
 
             //println!("build block: {:?}", position);
 
