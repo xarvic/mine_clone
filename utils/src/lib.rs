@@ -44,14 +44,18 @@ pub fn write_line(line: &mut [f32; MAP_SIZE], seed: u64, z: f32, x_start: f32, m
     }
 }
 
+fn mod_signed(x: i64, n: usize) -> i64 {
+    ((x % n as i64) + n as i64) % n as i64
+}
+
 pub fn write_perlin_noise(data: &mut MapData, seed: u64, x_start: i64, z_start: i64, step_size_i: usize) {
     let     step_size = step_size_i as f32;
-    let     x_read = (x_start % step_size_i as i64) as f32;
-    let mut z_read = (z_start % step_size_i as i64) as f32;
+    let     x_offset = mod_signed(x_start, step_size_i) as f32;
+    let     z_offset = mod_signed(z_start, step_size_i) as f32;
     let     x_start = x_start as f32;
     let mut z_start = z_start as f32;
-    let     x_offset = x_start - x_read;
-    let     z_offset = z_start - z_read;
+    let     x_read = x_start - x_offset;
+    let mut z_read = z_start - z_offset;
 
     let mut array_index = 0;
 
