@@ -14,10 +14,10 @@ pub const POWERED: BlockInfo = BlockInfo(1);
 pub const BLOCK_MESH: BlockInfo = BlockInfo(1 << 1);
 
 impl BlockInfo {
-    pub fn contains(&self, other: BlockInfo) -> bool {
+    pub fn contains(self, other: BlockInfo) -> bool {
         (self.0 & other.0) == other.0
     }
-    pub fn contains_any(&self, other: BlockInfo) -> bool {
+    pub fn contains_any(self, other: BlockInfo) -> bool {
         (self.0 & other.0) != 0
     }
 }
@@ -29,12 +29,12 @@ impl Debug for BlockInfo {
             found = true;
             f.write_str("POWERED")?;
         }
-        if self.contains(POWERED) {
+        if self.contains(BLOCK_MESH) {
             if found {
                 f.write_str(" | ")?;
             }
             found = true;
-            f.write_str("POWERED")?;
+            f.write_str("BLOCK_MESH")?;
         }
 
         if !found {
@@ -153,4 +153,11 @@ impl BlockLook {
     pub const fn top_side_bottom(top: u32, side: u32, bottom: u32) -> Self {
         BlockLook::Faces {textures: Sides::new([top, side, side, side, side, bottom])}
     }
+}
+
+/// The block and feel of a static block (only described by its id and meta fields)
+trait BlockPersonality {
+    fn info(&self, data: u8) -> BlockInfo;
+
+    fn block_tick(&self);
 }

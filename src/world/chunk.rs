@@ -330,7 +330,7 @@ pub fn update_chunk_scope(
         let mut load_dist_square = manager.chunk_loading_distance * CHUNK_SIZE as f32;
         load_dist_square *= load_dist_square;
 
-        (-load_dist..=load_dist)
+            (-load_dist..=load_dist)
             .cartesian_product(-load_dist..=load_dist)
             .cartesian_product(-load_dist..=load_dist)
             .map(|((x, y), z)| {

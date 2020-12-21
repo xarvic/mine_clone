@@ -336,3 +336,21 @@ impl Sub<ChunkPosition> for BlockPosition {
         )
     }
 }
+
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
+pub struct SurfaceCoordinates {
+    x: i64,
+    z: i64,
+}
+
+impl SurfaceCoordinates {
+    pub fn new(x: i64, z: i64) -> Self {
+        SurfaceCoordinates {
+            x,
+            z,
+        }
+    }
+    pub fn with_height(self, y: i64) -> ChunkPosition {
+        ChunkPosition::new(self.x, y, self.z)
+    }
+}
