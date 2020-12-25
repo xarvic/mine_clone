@@ -1,4 +1,4 @@
-TODO: fix lights
+TODO: block types
 TODO: implement block placement
 TODO: switch to bevy-rapier-3d
 TODO: implement collision

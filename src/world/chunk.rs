@@ -175,7 +175,7 @@ impl ChunkManager {
         let material = StandardMaterial{
             albedo: Default::default(),
             albedo_texture: Some(texture),
-            shaded: false
+            shaded: true
         };
 
         let material_handle = materials.add(material);
