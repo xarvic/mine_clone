@@ -13,7 +13,7 @@ use std::ops::{Deref, DerefMut};
 use crate::player::player::PlayerMovement;
 use itertools::Itertools;
 
-use utils::{MapData, create_perlin_noise};
+use utils::{MapData, create_perlin_noise, write_perlin_noise};
 
 pub struct Chunk {
     pub position: ChunkPosition,
@@ -121,11 +121,14 @@ fn chunk_loader(position: ChunkPosition) -> ChunkData {
     } else {
         let mut map_data = MapData::default();
 
-        let noise = create_perlin_noise(0, position.x * CHUNK_SIZE, position.z * CHUNK_SIZE, 8);
+        let mut noise = create_perlin_noise(264958643553465476, position.x * CHUNK_SIZE, position.z * CHUNK_SIZE, 64, 0.0..=8.0);
+        write_perlin_noise(&mut noise, 264958643553465476, position.x * CHUNK_SIZE, position.z * CHUNK_SIZE, 16, 0.0..=2.0);
+        write_perlin_noise(&mut noise, 264958643553465476, position.x * CHUNK_SIZE, position.z * CHUNK_SIZE, 4, 0.0..=0.8);
+        write_perlin_noise(&mut noise, 264958643553465476, position.x * CHUNK_SIZE, position.z * CHUNK_SIZE, 2, 0.0..=0.2);
 
         let mut chunk = ChunkData::filled(AIR);
         for (position , block) in chunk.iter_mut() {
-            if noise[position.x as usize][position.z as usize] >= position.y as f32 + 0.5 {
+            if noise[position.x as usize][position.z as usize] >= position.y as f32 - 0.5 {
                 *block = if position.y == 15 {
                     GRASS
                 } else if position.y > 9 {

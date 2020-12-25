@@ -129,7 +129,7 @@ pub fn create_chunk_mesh(chunk: &Chunk, query: &Query<(&Chunk,)>) -> Option<Mesh
             //side -1
             if check_block_face(position.with_x(-1), x_negative) {
                 create_face(&mut verticies, &mut indices, &mut normals, &mut uvs,
-                            Vec3::new(0.0, 0.0, 1.0),
+                            Vec3::new(-1.0, 0.0, 0.0),
                             Vec3::new(lower.x, heigher.y, lower.z), Vec3::new(0.0, 0.0, 1.0), Vec3::new(0.0, -1.0, 0.0),
                             16, textures[Side::Back]
                 );
@@ -137,7 +137,7 @@ pub fn create_chunk_mesh(chunk: &Chunk, query: &Query<(&Chunk,)>) -> Option<Mesh
             //side -2
             if check_block_face(position.with_z(-1), z_negative) {
                 create_face(&mut verticies, &mut indices, &mut normals, &mut uvs,
-                            Vec3::new(0.0, 0.0, 1.0),
+                            Vec3::new(0.0, 0.0, -1.0),
                             Vec3::new(heigher.x, heigher.y, lower.z), Vec3::new(-1.0, 0.0, 0.0), Vec3::new(0.0, -1.0, 0.0),
                             16, textures[Side::Right]
                 );

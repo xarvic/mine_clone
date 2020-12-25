@@ -1,0 +1,13 @@
+TODO: fix lights
+TODO: implement block placement
+TODO: switch to bevy-rapier-3d
+TODO: implement collision
+TODO: implement network
+TODO: implement biomes
+TODO: implement structures
+TODO: implement world saving and loading
+TODO: implement moving entities
+TODO: implement ai
+TODO: underground
+TODO: underground structures
+TODO: main menu

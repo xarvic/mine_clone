@@ -5,7 +5,7 @@
   "game_settings": {
     "print_fps": true,
     "print_position": false,
-    "load_distance": 3.5,
-    "unload_distance": 4
+    "load_distance": 5.5,
+    "unload_distance": 6
   }
 }

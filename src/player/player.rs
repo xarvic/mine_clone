@@ -42,10 +42,10 @@ pub struct PlayerMovement {
 impl PlayerMovement {
     pub fn new(print_position: bool) -> Self {
         PlayerMovement {
-            speed: 1.5,
-            max_speed: 0.5,
-            sensitivity: 10.0,
-            friction: 1.0,
+            speed: 3.0,
+            max_speed: 8.0,
+            sensitivity: 8.0,
+            friction: 2.2,
             pitch: 0.0,
             yaw: 0.0,
             velocity: Vec3::zero(),
@@ -213,7 +213,7 @@ pub fn player_interact(
         for (player, transform) in player.iter() {
             let ray = Ray::from_global_transform(transform);
 
-            let block = ray.grid_snap().take(20)
+            let block = ray.grid_snap().take(100)
                 .filter_map(|position|{
                     if chunk_manager.get_with_mut(position, &mut chunks)? != &AIR {
                         Some(position)

@@ -1,10 +1,10 @@
 use crate::settings::Settings;
 use bevy::DefaultPlugins;
+use bevy::app::App;
+use bevy::render::render_graph::base::Msaa;
 use crate::player::init_player;
 use crate::world::init_world;
 use crate::renderer::init_rendering;
-use bevy::app::App;
-use bevy::render::render_graph::base::Msaa;
 
 pub fn load_engine(settings: Settings) -> App {
 

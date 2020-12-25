@@ -31,7 +31,7 @@ fn setup(
         .insert_resource(FPS::default())
         // light
         .spawn(LightBundle {
-            transform: Transform::from_translation(Vec3::new(-2.0, 8.0, -1.0)),
+            transform: Transform::from_translation(Vec3::new(-2.0, 16.0, -1.0)),
             ..Default::default()
         })
         // camera
@@ -42,6 +42,12 @@ fn setup(
         })
         .with_bundle((
             PlayerMovement::new(false),
+            Light{
+                color: Color::WHITE,
+                fov: 120.0f32.to_radians(),
+                depth: 1.0..100.0
+            },
+            GlobalTransform::default()
         ));
 }
 
