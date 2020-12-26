@@ -17,8 +17,6 @@ fn create_face(verticies: &mut Vec<[f32; 3]>, indices: &mut Vec<u16>, normals: &
 
     let step = 1.0 / (uv_resolution as f32);
 
-
-
     //  0    1
     //   +--+
     //   | /|

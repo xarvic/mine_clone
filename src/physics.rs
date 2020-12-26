@@ -73,6 +73,10 @@ pub struct Ray{
     direction: Vec3,
 }
 
+pub trait BlockIter: Iterator<Item=BlockPosition> {
+    fn last_which<F>()
+}
+
 pub struct GridSnap {
     ray: Ray,
     current_block: BlockPosition,

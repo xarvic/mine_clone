@@ -10,6 +10,7 @@ pub mod block_inner;
 pub mod chunk_mesh;
 pub mod coordinates;
 mod chunk_manager;
+pub mod block;
 
 pub fn init_world(builder: &mut AppBuilder, settings: &Settings) {
     builder.add_resource(ChunkManager::new(

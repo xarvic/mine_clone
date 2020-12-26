@@ -155,9 +155,9 @@ impl BlockLook {
     }
 }
 
-/// The block and feel of a static block (only described by its id and meta fields)
+/// The look and feel of a static block (only described by its id and meta fields)
 trait BlockPersonality {
     fn info(&self, data: u8) -> BlockInfo;
+    fn get_block_look(&self, data: u8) -> BlockLook;
 
-    fn block_tick(&self);
 }

@@ -9,14 +9,8 @@ pub type MapData = [[f32; MAP_SIZE as usize]; MAP_SIZE as usize];
 
 #[inline(always)]
 fn coordinate_random(x: f32, z: f32, _step_size: f32, seed: u64, add: f32, mul: f32) -> f32 {
-    //let random = 2920.0 * sin(ix * 21942.0 + iy * 171324.0 + 8912.0) * cos(ix * 23157.0 * iy * 217832.0 + 9758.0);
-    /*if (x + z) % 10.0 == 0.0 { //This makes interpolation tests easier
-        -1.0
-    } else {
-        1.0
-    }*/
-    let value = (x.to_bits().wrapping_mul(4245438565_u32.wrapping_add(seed as u32))) ^ (z.to_bits().wrapping_mul (1968475343_u32.wrapping_add((seed >> 32) as u32))) ^ 4232335324_u32;
-    let unit = (value as f32 / 4_294_967_295.0) * (value as f32 / 4_294_967_295.0);
+    let random = 2920.0 * sin(ix * 21942.0 + iy * 171324.0 + (seed as u32)) * cos(ix * 23157.0 * iy * 217832.0 + (seed as u32));
+
     unit * mul + add
 }
 
@@ -38,7 +32,7 @@ pub fn write_line(line: &mut [f32; MAP_SIZE], seed: u64, z: f32, x_start: f32, m
 
     for element in line.iter_mut() {
         if index > x_read {
-            //we exceeded the last interval => read the next interval end!
+            //we exceeded the last interval =>Guiding Light read the next interval end!
             x_read += step_size;
             step = (coordinate_random(x_read, z, step_size, seed, add, mul) - current) / step_size;
         }
@@ -53,13 +47,12 @@ fn mod_signed(x: i64, n: usize) -> i64 {
     ((x % n as i64) + n as i64) % n as i64
 }
 
-#[inline]
 pub fn write_perlin_noise(data: &mut MapData, seed: u64, x_start: i64, z_start: i64, step_size_i: usize, value_range: RangeInclusive<f32>) {
     let     step_size = step_size_i as f32;
     let     x_offset = mod_signed(x_start, step_size_i) as f32;
     let     z_offset = mod_signed(z_start, step_size_i) as f32;
     let     x_start = x_start as f32;
-    let mut z_start = z_start as f32;
+    let     z_start = z_start as f32;
     let     x_read = x_start - x_offset;
     let mut z_read = z_start - z_offset;
 
@@ -112,8 +105,30 @@ pub fn write_perlin_noise(data: &mut MapData, seed: u64, x_start: i64, z_start: 
     }
 }
 
+pub fn write_perlin_noise_oktaves(data: &mut MapData, mut seed: u64, x_start: i64, z_start: i64, mut step_size_i: usize, value_range: RangeInclusive<f32>) {
+    let low = value_range.start();
+    let mut add = (value_range.end() - value_range.start()) / 2.0;
+
+    //Base pass
+    write_perlin_noise(data, seed, x_start, z_start, step_size_i, *low..=(low+add+1.0));
+
+    //Following
+    while step_size_i > 1 {
+        seed = ((seed * seed) + 463857393) ^ seed;
+        add /= 2.0;
+        step_size_i /= 2;
+        write_perlin_noise(data, seed, x_start, z_start, step_size_i, *low..=low+add);
+    }
+}
+
 pub fn create_perlin_noise(seed: u64, start_x: i64, start_z: i64, step_i: usize, value_range: RangeInclusive<f32>) -> MapData {
     let mut map_data = Default::default();
     write_perlin_noise(&mut map_data, seed, start_x, start_z, step_i, value_range);
+    map_data
+}
+
+pub fn create_perlin_noise_oktaves(seed: u64, start_x: i64, start_z: i64, step_i: usize, value_range: RangeInclusive<f32>) -> MapData {
+    let mut map_data = Default::default();
+    write_perlin_noise_oktaves(&mut map_data, seed, start_x, start_z, step_i, value_range);
     map_data
 }
