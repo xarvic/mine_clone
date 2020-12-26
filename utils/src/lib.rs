@@ -9,8 +9,10 @@ pub type MapData = [[f32; MAP_SIZE as usize]; MAP_SIZE as usize];
 
 #[inline(always)]
 fn coordinate_random(x: f32, z: f32, _step_size: f32, seed: u64, add: f32, mul: f32) -> f32 {
-    let random = 2920.0 * sin(ix * 21942.0 + iy * 171324.0 + (seed as u32)) * cos(ix * 23157.0 * iy * 217832.0 + (seed as u32));
+    //let random = 2920.0 * sin(ix * 21942.0 + iy * 171324.0 + 8912.0) * cos(ix * 23157.0 * iy * 217832.0 + 9758.0);
 
+    let value = (x.to_bits().wrapping_mul(4245438565_u32.wrapping_add(seed as u32))) ^ (z.to_bits().wrapping_mul (1968475343_u32.wrapping_add((seed >> 32) as u32))) ^ 4232335324_u32;
+    let unit = (value as f32 / 4_294_967_295.0) * (value as f32 / 4_294_967_295.0);
     unit * mul + add
 }
 

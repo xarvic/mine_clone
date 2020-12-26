@@ -1,6 +1,4 @@
 use std::ops::{Range, Index};
-use bevy::asset::Handle;
-use bevy::render::mesh::Mesh;
 use std::fmt::Debug;
 use std::ops::BitOr;
 use std::fmt::Formatter;
@@ -53,6 +51,13 @@ impl BitOr for BlockInfo {
     }
 }
 
+pub const AIR: BlockInner = BlockInner{btype: 0, data: 0, info: EMPTY};
+pub const DIRT: BlockInner = BlockInner{btype: 2, data: 0, info: BLOCK_MESH};
+pub const GRASS: BlockInner = BlockInner{btype: 3, data: 0, info: BLOCK_MESH};
+pub const STONE: BlockInner = BlockInner{btype: 1, data: 0, info: BLOCK_MESH};
+pub const WOOD: BlockInner = BlockInner{btype: 4, data: 0, info: BLOCK_MESH};
+pub const LOG: BlockInner = BlockInner{btype: 5, data: 0, info: BLOCK_MESH};
+
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub struct BlockInner {
     pub btype: u16,
@@ -60,28 +65,7 @@ pub struct BlockInner {
     pub info: BlockInfo,
 }
 
-pub static AIR: BlockInner = BlockInner {btype: 0, data: 0, info: EMPTY};
-pub static GRASS: BlockInner = BlockInner {btype: 1, data: 0, info: BLOCK_MESH };
-pub static DIRT: BlockInner = BlockInner {btype: 2, data: 0, info: BLOCK_MESH };
-pub static STONE: BlockInner = BlockInner {btype: 3, data: 0, info: BLOCK_MESH };
-pub static LOG: BlockInner = BlockInner {btype: 3, data: 0, info: BLOCK_MESH };
-
-pub static TEXTURES: &'static [BlockLook] = &[
-    BlockLook::Empty,
-    BlockLook::top_side_bottom(0, 3, 2),
-    BlockLook::uniform(2),
-    BlockLook::uniform(1),
-    BlockLook::top_side_bottom(21, 20, 21),
-];
-
-struct TexCoords;
-
 struct Faces([Range<usize>;6]);
-
-enum Look<'a> {
-    Block{faces: &'a Faces, translucent: bool},
-    Mesh{meshes: &'a [(Handle<Mesh>, TexCoords)], translucent: bool},
-}
 
 #[repr(C)]
 pub enum Side {
@@ -93,6 +77,7 @@ pub enum Side {
     Bottom = 5,
 }
 
+#[derive(Copy, Clone)]
 pub struct Sides<T> {
     values: [T; 6],
 }
@@ -135,29 +120,4 @@ impl<T> IndexMut<Side> for Sides<T> {
             self.values.get_unchecked_mut(index as usize)
         }
     }
-}
-
-struct BlockMeta {
-    pub look: BlockLook,
-}
-
-pub enum BlockLook {
-    Empty,
-    Faces{textures: Sides<u32>},
-}
-
-impl BlockLook {
-    pub const fn uniform(texture: u32) -> Self {
-        BlockLook::Faces {textures: Sides::filled(texture)}
-    }
-    pub const fn top_side_bottom(top: u32, side: u32, bottom: u32) -> Self {
-        BlockLook::Faces {textures: Sides::new([top, side, side, side, side, bottom])}
-    }
-}
-
-/// The look and feel of a static block (only described by its id and meta fields)
-trait BlockPersonality {
-    fn info(&self, data: u8) -> BlockInfo;
-    fn get_block_look(&self, data: u8) -> BlockLook;
-
 }

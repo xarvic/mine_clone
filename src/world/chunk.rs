@@ -1,5 +1,7 @@
-use crate::world::block_inner::{BlockInner, AIR, GRASS, DIRT, STONE};
-use crate::world::chunk_mesh::create_chunk_mesh;
+use super::block_inner::BlockInner;
+use super::chunk_mesh::{create_chunk_mesh, BevyChunkMeshBuilder, ChunkMeshBuilder, ChunkMesh};
+use super::coordinates::{ChunkPosition, BlockVector, CHUNK_SIZE, BlockPosition, MAX_CHILD};
+use crate::player::player::PlayerMovement;
 
 use std::mem::replace;
 use std::ops::{Index, IndexMut};
@@ -7,13 +9,13 @@ use itertools::__std_iter::repeat;
 use std::collections::HashMap;
 
 use bevy::prelude::*;
-use crate::world::coordinates::{ChunkPosition, BlockVector, CHUNK_SIZE, BlockPosition, MAX_CHILD};
 use std::collections::HashSet;
 use std::ops::{Deref, DerefMut};
-use crate::player::player::PlayerMovement;
 use itertools::Itertools;
 
 use utils::{MapData, create_perlin_noise, write_perlin_noise};
+use crate::world::block_inner::{AIR, GRASS, DIRT, STONE};
+use crate::world::block_types::StaticBlocksRes;
 
 pub struct Chunk {
     pub position: ChunkPosition,
@@ -439,6 +441,7 @@ pub fn update_chunk_mesh(
     mut meshes: ResMut<Assets<Mesh>>,
     mut manager: ResMut<ChunkManager>,
     mut chunks: Query<(&Chunk, &mut Handle<Mesh>)>,
+    res: Res<StaticBlocksRes>,
     adjacent: Query<(&Chunk,)>,
 ) {
     let mut change = 0;
@@ -451,8 +454,10 @@ pub fn update_chunk_mesh(
                     meshes.remove(handle.clone());
                     change -= 1;
                 }
-                let mesh = create_chunk_mesh(chunk, &adjacent);
-                if let Some(mesh) = mesh {
+                let mut builder = BevyChunkMeshBuilder::empty();
+                create_chunk_mesh(chunk, &adjacent, &**res, &mut builder);
+
+                if let Some(mesh) = Mesh::from_builder(builder) {
                     // Some -> Some just update the mesh
                     *handle = meshes.add(mesh);
                     change += 1;
