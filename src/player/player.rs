@@ -2,7 +2,8 @@ use bevy::prelude::*;
 use bevy::input::mouse::{MouseMotion, MouseButtonInputState};
 use crate::physics::Ray;
 use crate::world::chunk::{Chunk, ChunkManager};
-use crate::world::block_inner::AIR;
+use crate::world::block_inner::{AIR, WOOD};
+use crate::world::coordinates::BlockPosition;
 
 pub struct PlayerMovement {
     /// The speed the FlyCamera moves at. Defaults to `1.0`
@@ -224,6 +225,24 @@ pub fn player_interact(
             if let Some(block) = block {
                 println!("update chunk!");
                 chunk_manager.set(block, AIR, &mut chunks);
+            }
+        }
+    }
+    if mouse_motion_events.just_released(MouseButton::Right) {
+        for (player, transform) in player.iter() {
+            let ray = Ray::from_global_transform(transform);
+
+            let block = ray.grid_snap().take(100)
+                .fold((BlockPosition::from_vector(transform.translation), false), |(old, set), position|{
+                    if set || chunk_manager.get_with_mut(position, &mut chunks) != Some(&AIR) {
+                        (old, true)
+                    } else {
+                        (position, false)
+                    }
+                });
+            if block.1 {
+                println!("update chunk!");
+                chunk_manager.set(block.0, WOOD, &mut chunks);
             }
         }
     }
