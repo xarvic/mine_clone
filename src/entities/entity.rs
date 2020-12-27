@@ -1,17 +1,17 @@
 use bevy::math::Vec3;
-use crate::physics::Quader;
+use crate::physics::collider::AAQuader;
 
 /// An movable object which interacts with others and the static chunks
 ///
 pub struct Object {
     velocity: Vec3,
     next_acceleration: Vec3,
-    collider: Quader,
+    collider: AAQuader,
     flying: bool,
 }
 
 impl Object {
-    pub fn new(collider: Quader, is_flying: bool) -> Self {
+    pub fn new(collider: AAQuader, is_flying: bool) -> Self {
         Object {
             velocity: Vec3::zero(),
             next_acceleration: Vec3::zero(),
@@ -39,7 +39,7 @@ impl Object {
         }
         self.next_acceleration = Vec3::zero();
     }
-    pub fn get_collider(&self) -> Quader {
+    pub fn get_collider(&self) -> AAQuader {
         self.collider
     }
 }

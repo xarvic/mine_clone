@@ -86,16 +86,16 @@ pub struct BevyChunkMeshBuilder {
     verticies: Vec<[f32; 3]>,
     normals: Vec<[f32; 3]>,
     uvs: Vec<[f32; 2]>,
-    indices: Vec<u16>,
+    pub(crate) indices: Vec<u16>,
 }
 
 impl ChunkMeshBuilder for BevyChunkMeshBuilder {
     fn empty() -> Self {
         BevyChunkMeshBuilder {
-            verticies: vec![],
-            normals: vec![],
-            uvs: vec![],
-            indices: vec![]
+            verticies: Vec::new(),
+            normals: Vec::new(),
+            uvs: Vec::new(),
+            indices: Vec::new(),
         }
     }
 

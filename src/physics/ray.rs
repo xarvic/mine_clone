@@ -1,70 +1,7 @@
-use bevy::prelude::{Vec3, Transform};
-use crate::world::coordinates::{BlockVector, BlockPosition};
-
-pub trait Intersection<Rhs> {
-    fn intersect(&self, other: &Rhs) -> bool;
-}
-
-#[derive(Copy, Clone, PartialEq, Debug)]
-pub struct Quader {
-    lower: Vec3,
-    higher: Vec3,
-}
-
-impl Quader {
-    pub fn new(lower: Vec3, higher: Vec3) -> Self {
-        assert!(lower.x <= higher.x && lower.y <= higher.y && lower.z <= higher.z, "invalid collider parameters!");
-        unsafe {
-            Self::unchecked(lower, higher)
-        }
-    }
-    pub unsafe fn unchecked(lower: Vec3, higher: Vec3) -> Self {
-        Self {
-            lower,
-            higher,
-        }
-    }
-    pub fn center_size(center: Vec3, size: Vec3) -> Self {
-        let half_size = size.abs() / 2.0;
-        unsafe {
-            Self::unchecked(center - half_size, center + half_size)
-        }
-    }
-    pub fn size(&self) -> Vec3 {
-        self.higher - self.lower
-    }
-    pub fn lower(&self) -> Vec3 {
-        self.lower
-    }
-    pub fn higher(&self) -> Vec3 {
-        self.higher
-    }
-    pub fn translate(&mut self, translation: Vec3) {
-        self.lower += translation;
-        self.higher += translation;
-    }
-    pub fn scale(&mut self, factor: f32) {
-        let half_size = self.size() / 2.0;
-        let center = self.lower + half_size;
-
-        self.lower = center - half_size * factor;
-        self.higher = center + half_size * factor;
-    }
-    pub fn volume(&self) -> f32 {
-        let size = self.size();
-        size.x * size.y * size.z
-    }
-}
-
-impl Intersection<Quader> for Quader {
-    fn intersect(&self, other: &Self) -> bool {
-        let max_dist = self.size() + other.size();
-
-        (self.higher.x - other.lower.x < max_dist.x || other.higher.x - self.lower.x < max_dist.x) &&
-            (self.higher.y - other.lower.y < max_dist.y || other.higher.y - self.lower.y < max_dist.y) &&
-            (self.higher.z - other.lower.z < max_dist.z || other.higher.z - self.lower.z < max_dist.z)
-    }
-}
+use crate::physics::collider::AAQuader;
+use crate::world::coordinates::{BlockPosition, BlockVector};
+use bevy::math::Vec3;
+use bevy::prelude::Transform;
 
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Ray{
@@ -83,7 +20,7 @@ impl Iterator for GridSnap {
 
     fn next(&mut self) -> Option<Self::Item> {
         let collider = unsafe {
-            Quader::unchecked(
+            AAQuader::unchecked(
                 self.current_block.lower_corner(),
                 self.current_block.higher_corner(),
             )
@@ -136,7 +73,7 @@ impl Ray {
             direction: self.direction,
         }
     }
-    pub fn hit_info(&self, other: &Quader) -> Option<RayHitInfo> {
+    pub fn hit_info(&self, other: &AAQuader) -> Option<RayHitInfo> {
         fn calc_hit_interval(origin: f32, direction: f32, start: f32, end: f32) -> (f32, f32, i64) {
             let start_dist = start - origin;
             let end_dist = end - origin;
@@ -159,20 +96,20 @@ impl Ray {
         let (x_start, x_end, x_or) = calc_hit_interval(
             self.origin.x,
             self.direction.x,
-            other.lower.x,
-            other.higher.x
+            other.lower().x,
+            other.higher().x
         );
         let (y_start, y_end, y_or) = calc_hit_interval(
             self.origin.y,
             self.direction.y,
-            other.lower.y,
-            other.higher.y
+            other.lower().y,
+            other.higher().y
         );
         let (z_start, z_end, z_or) = calc_hit_interval(
             self.origin.z,
             self.direction.z,
-            other.lower.z,
-            other.higher.z
+            other.lower().z,
+            other.higher().z
         );
 
 
@@ -206,11 +143,5 @@ impl Ray {
             ray,
             current_block: BlockPosition::from_vector(self.origin)
         }
-    }
-}
-
-impl Intersection<Quader> for Ray {
-    fn intersect(&self, other: &Quader) -> bool {
-        self.hit_info(other).is_some()
     }
 }

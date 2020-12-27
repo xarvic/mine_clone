@@ -2,6 +2,7 @@ use bevy::prelude::*;
 
 use crate::world::block_inner::{Sides, BlockInfo, EMPTY, BLOCK_MESH};
 use crate::world::chunk_mesh::{VisibleDirection, Face};
+use crate::physics::collider::AAQuader;
 
 
 pub type StaticBlocks = [(BlockLook, Box<dyn BlockPersonality + Send + Sync>)];
@@ -32,6 +33,12 @@ pub enum BlockLook {
     Cube{textures: Sides<u32>},
 }
 
+pub enum BlockFeel {
+    Empty,
+    ColliderSet(&'static [AAQuader]),
+    Custom,
+}
+
 /// The look and feel of a static block (only described by its id and meta fields)
 pub trait BlockPersonality {
     /// The look type for caching, so we can optimise for the most common types (Cube and Empty)
@@ -42,6 +49,10 @@ pub trait BlockPersonality {
     fn info(&self, data: u8) -> BlockInfo;
     fn get_faces(&self, data: u8) -> &[(Face, VisibleDirection)];
     fn get_mesh(&self, data: u8) -> Option<(Handle<Mesh>, Handle<StandardMaterial>)>;
+
+    fn get_feel(&self) -> BlockFeel;
+    fn get_collider(&self, data: u8) -> &[AAQuader];
+
 }
 
 pub struct Air;
@@ -66,6 +77,14 @@ impl BlockPersonality for Air {
     fn get_mesh(&self, data: u8) -> Option<(Handle<Mesh>, Handle<StandardMaterial>)> {
         None
     }
+
+    fn get_feel(&self) -> BlockFeel {
+        BlockFeel::Empty
+    }
+
+    fn get_collider(&self, data: u8) -> &[AAQuader] {
+        &[]
+    }
 }
 
 
@@ -87,6 +106,8 @@ impl Cube {
     }
 }
 
+static QUADER_COLLIDERS: &'static [AAQuader] = &[AAQuader::new(Vec3{x:0.0, y:0.0, z:0.0}, Vec3{x:1.0, y:1.0, z:1.0})];
+
 impl BlockPersonality for Cube{
     fn get_block_look(&self) -> BlockLook {
         BlockLook::Cube { textures: self.textures }
@@ -106,5 +127,14 @@ impl BlockPersonality for Cube{
 
     fn get_mesh(&self, data: u8) -> Option<(Handle<Mesh>, Handle<StandardMaterial>)> {
         None
+    }
+
+    fn get_feel(&self) -> BlockFeel {
+
+        BlockFeel::ColliderSet(QUADER_COLLIDERS)
+    }
+
+    fn get_collider(&self, data: u8) -> &[AAQuader] {
+        QUADER_COLLIDERS
     }
 }

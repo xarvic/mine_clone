@@ -22,6 +22,7 @@ rand = "0.8"
 utils = {path = "./utils"}
 
 bevy = "0.4.0"
+bevy_rapier3d = "0.7.0"
 
 #[profile.release]
 #lto = true

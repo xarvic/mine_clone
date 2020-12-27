@@ -451,6 +451,7 @@ pub fn update_chunk_mesh(
                 let mut builder = BevyChunkMeshBuilder::empty();
                 create_chunk_mesh(chunk, &adjacent, &**res, &mut builder);
 
+
                 if let Some(mesh) = Mesh::from_builder(builder) {
                     // Some -> Some just update the mesh
                     *handle = meshes.add(mesh);
