@@ -3,9 +3,10 @@
     "msaa_samples": 4
   },
   "game_settings": {
-    "print_fps": true,
+    "print_fps": false,
     "print_position": false,
-    "load_distance": 5.5,
-    "unload_distance": 6
+    "load_distance": 4,
+    "unload_distance": 6,
+    "asset_path": "/data/Workspaces/Rust/mine_clone/assets"
   }
 }

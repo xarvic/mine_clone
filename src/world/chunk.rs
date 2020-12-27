@@ -3,19 +3,20 @@ use super::chunk_mesh::{create_chunk_mesh, BevyChunkMeshBuilder, ChunkMeshBuilde
 use super::coordinates::{ChunkPosition, BlockVector, CHUNK_SIZE, BlockPosition, MAX_CHILD};
 use crate::player::player::PlayerMovement;
 
+use crate::world::block_inner::AIR;
+use crate::world::block_types::StaticBlocksRes;
+
+use bevy::prelude::*;
+
 use std::mem::replace;
 use std::ops::{Index, IndexMut};
 use itertools::__std_iter::repeat;
 use std::collections::HashMap;
-
-use bevy::prelude::*;
 use std::collections::HashSet;
 use std::ops::{Deref, DerefMut};
 use itertools::Itertools;
-
-use utils::{MapData, create_perlin_noise, write_perlin_noise};
-use crate::world::block_inner::{AIR, GRASS, DIRT, STONE};
-use crate::world::block_types::StaticBlocksRes;
+use std::path::PathBuf;
+use crate::content::provider::{Provider, ChunkUpdate};
 
 pub struct Chunk {
     pub position: ChunkPosition,
@@ -117,46 +118,22 @@ impl<T: Into<BlockVector>> IndexMut<T> for ChunkData {
     }
 }
 
-fn chunk_loader(position: ChunkPosition) -> ChunkData {
-    if position.y != 0 {
-        ChunkData::filled(AIR)
-    } else {
-        let mut map_data = MapData::default();
-
-        let mut noise = create_perlin_noise(264958643553465476, position.x * CHUNK_SIZE, position.z * CHUNK_SIZE, 64, 0.0..=8.0);
-        write_perlin_noise(&mut noise, 264958643553465476, position.x * CHUNK_SIZE, position.z * CHUNK_SIZE, 16, 0.0..=2.0);
-        write_perlin_noise(&mut noise, 264958643553465476, position.x * CHUNK_SIZE, position.z * CHUNK_SIZE, 4, 0.0..=0.8);
-        write_perlin_noise(&mut noise, 264958643553465476, position.x * CHUNK_SIZE, position.z * CHUNK_SIZE, 2, 0.0..=0.2);
-
-        let mut chunk = ChunkData::filled(AIR);
-        for (position , block) in chunk.iter_mut() {
-            if noise[position.x as usize][position.z as usize] >= position.y as f32 - 0.5 {
-                *block = if position.y == 15 {
-                    GRASS
-                } else if position.y > 9 {
-                    DIRT
-                } else {
-                    STONE
-                };
-            }
-        }
-        chunk
-    }
-}
-
 pub struct ChunkManager {
     chunks: HashMap<ChunkPosition, Entity>,
+    provider: Box<dyn Provider + Send + Sync>,
     player_chunk: ChunkPosition,
     chunk_loading_distance: f32,
     chunk_discard_distance: f32,
     texture_atlas: Option<Handle<StandardMaterial>>,
     chunk_rerender: HashSet<ChunkPosition>,
     current_meshes: isize,
+    asset_folder: PathBuf,
 }
 
 impl ChunkManager {
-    pub fn new(current_position: ChunkPosition, chunk_loading_distance: f32, chunk_discard_distance: f32) -> Self {
+    pub fn new(provider: Box<dyn Provider + Send + Sync>, current_position: ChunkPosition, chunk_loading_distance: f32, chunk_discard_distance: f32, asset_folder: PathBuf) -> Self {
         Self {
+            provider,
             chunks: HashMap::new(),
             player_chunk: current_position,
             chunk_loading_distance: chunk_loading_distance as f32,
@@ -164,6 +141,7 @@ impl ChunkManager {
             texture_atlas: None,
             chunk_rerender: HashSet::new(),
             current_meshes: 0,
+            asset_folder,
         }
     }
     fn init(&mut self, commands: &mut Commands,
@@ -173,7 +151,9 @@ impl ChunkManager {
     ) {
         println!("init registry!");
 
-        let texture: Handle<Texture> = server.load("textures.png");
+        let mut path = self.asset_folder.clone();
+        path.push("textures.png");
+        let texture: Handle<Texture> = server.load(path);
         let material = StandardMaterial{
             albedo: Default::default(),
             albedo_texture: Some(texture),
@@ -185,7 +165,7 @@ impl ChunkManager {
         self.texture_atlas = Some(material_handle);
     }
     fn load_chunk(&mut self, commands: &mut Commands, chunk_position: ChunkPosition) -> Entity {
-        let chunk_data = chunk_loader(chunk_position);
+        let chunk_data = self.provider.load_chunk(chunk_position);
 
         let chunk = Chunk {
             position: chunk_position,
@@ -238,29 +218,34 @@ impl ChunkManager {
         })
     }
     pub fn set(&mut self, position: BlockPosition, block: BlockInner, query: &mut Query<(&mut Chunk,)>) {
+
         if let Some(mut block_ref) = self.get_mut(position, query) {
             *block_ref = block;
 
-            let (block, chunk) = position.local();
+
+
+            let (block_position, chunk) = position.local();
             self.chunk_rerender.insert(chunk);
-            if block.x == 0 {
+            if block_position.x == 0 {
                 self.chunk_rerender.insert(position.with_x(-1).chunk());
             }
-            if block.x == MAX_CHILD {
+            if block_position.x == MAX_CHILD {
                 self.chunk_rerender.insert(position.with_x(1).chunk());
             }
-            if block.y == 0 {
+            if block_position.y == 0 {
                 self.chunk_rerender.insert(position.with_y(-1).chunk());
             }
-            if block.y == MAX_CHILD {
+            if block_position.y == MAX_CHILD {
                 self.chunk_rerender.insert(position.with_y(1).chunk());
             }
-            if block.z == 0 {
+            if block_position.z == 0 {
                 self.chunk_rerender.insert(position.with_z(-1).chunk());
             }
-            if block.z == MAX_CHILD {
+            if block_position.z == MAX_CHILD {
                 self.chunk_rerender.insert(position.with_z(1).chunk());
             }
+
+            self.provider.apply_chunk_update(ChunkUpdate::BlockUpdate(position, block));
         }
         //self.block_updates.extend(position.adjacent());
     }
@@ -357,6 +342,8 @@ pub fn update_chunk_scope(
             manager.load_chunk(commands, *position);
         }
 
+
+
         let unload_dist_square = manager.chunk_discard_distance *
             manager.chunk_discard_distance *
             CHUNK_SIZE as f32 *
@@ -442,10 +429,17 @@ pub fn update_chunk_mesh(
     mut manager: ResMut<ChunkManager>,
     mut chunks: Query<(&Chunk, &mut Handle<Mesh>)>,
     res: Res<StaticBlocksRes>,
+    time: Res<Time>,
     adjacent: Query<(&Chunk,)>,
 ) {
     let mut change = 0;
+    /*if ((time.delta_seconds_f64() + time.time_since_startup().as_secs_f64()) as u64) > time.time_since_startup().as_secs_f64() as u64 {
+        //Print numbers:
+        println!("{} Chunks, {} Meshes, {} Chunk Entities!", manager.chunks.len(), meshes.len(), chunks.iter_mut().len());
+    }*/
+
     for position in manager.chunk_rerender.iter() {
+
         if let Some(entity) = manager.chunks
             .get(position) {
             if let Ok((chunk, mut handle)) = chunks.get_mut(*entity) {

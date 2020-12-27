@@ -21,7 +21,7 @@ pub mod util;
 pub mod settings;
 pub mod physics;
 pub mod entities;
-mod generation;
+pub mod content;
 
 fn load_settings() -> Result<Settings> {
     Ok(match serde_json::from_reader(BufReader::new(File::open("./settings.json")?)) {

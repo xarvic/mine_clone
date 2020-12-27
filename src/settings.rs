@@ -1,4 +1,5 @@
 use serde::{Serialize, Deserialize};
+use std::path::PathBuf;
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct Settings{
@@ -30,7 +31,7 @@ pub struct GameSettings {
     pub print_position: bool,
     pub load_distance: f32,
     pub unload_distance: f32,
-
+    pub asset_path: PathBuf,
 }
 
 impl Default for GameSettings {
@@ -40,6 +41,7 @@ impl Default for GameSettings {
             load_distance: 2.0,
             print_fps: false,
             unload_distance: 4.0,
+            asset_path: PathBuf::from("/data/Workspaces/Rust/mine_clone/assets"),
         }
     }
 }
