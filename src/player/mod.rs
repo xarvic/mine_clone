@@ -3,6 +3,8 @@ use player::{PlayerMovement, camera_movement_system, mouse_motion_system, MouseS
 use crate::settings::Settings;
 use crate::util::{print_fps, FPS};
 use crate::player::player::player_interact;
+use crate::physics::rigid_body::PhysicsEngine;
+use crate::physics::collider::AAQuader;
 
 pub mod player;
 
@@ -21,10 +23,17 @@ pub fn init_player(builder: &mut AppBuilder, settings: &Settings) {
 //TODO: mut 'commands: Commands' only works on 0.3 (change to 'commands: &mut Commands' otherwise)!
 fn setup(
     commands: &mut Commands,
+    mut physics: ResMut<PhysicsEngine>,
     meshes: ResMut<Assets<Mesh>>,
     textures: ResMut<Assets<Texture>>,
     materials: ResMut<Assets<StandardMaterial>>,
 ) {
+    let handle = physics.create_rigid_body(
+        Vec3::new(-4.0, 24.0, -4.0),
+        1.0,
+        true,
+        AAQuader::new(Vec3::new(-0.4, -1.5, -0.4), Vec3::new(0.4, 0.3, 0.4))
+    );
 
     commands
         .insert_resource(MouseState::default())
@@ -47,7 +56,8 @@ fn setup(
                 fov: 120.0f32.to_radians(),
                 depth: 1.0..100.0
             },
-            GlobalTransform::default()
+            GlobalTransform::default(),
+            handle,
         ));
 }
 

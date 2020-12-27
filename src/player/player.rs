@@ -4,6 +4,7 @@ use crate::world::chunk::{Chunk, ChunkManager};
 use crate::world::block_inner::{AIR, WOOD};
 use crate::world::coordinates::BlockPosition;
 use crate::physics::ray::Ray;
+use crate::physics::rigid_body::{PhysicsEngine, RigidBodyHandle};
 
 pub struct PlayerMovement {
     /// The speed the FlyCamera moves at. Defaults to `1.0`
@@ -43,7 +44,7 @@ pub struct PlayerMovement {
 impl PlayerMovement {
     pub fn new(print_position: bool) -> Self {
         PlayerMovement {
-            speed: 3.0,
+            speed: 7.0,
             max_speed: 8.0,
             sensitivity: 8.0,
             friction: 2.2,
@@ -98,9 +99,10 @@ fn movement_axis(
 pub fn camera_movement_system(
     time: Res<Time>,
     keyboard_input: Res<Input<KeyCode>>,
-    mut query: Query<(&mut PlayerMovement, &mut Transform)>,
+    mut physics: ResMut<PhysicsEngine>,
+    mut query: Query<(&mut PlayerMovement, &mut Transform, &RigidBodyHandle)>,
 ) {
-    for (mut options, mut transform) in query.iter_mut() {
+    for (mut options, mut transform, handle) in query.iter_mut() {
         let (axis_h, axis_v, axis_float) = if options.enabled {
             (
 
@@ -137,6 +139,8 @@ pub fn camera_movement_system(
             println!("position: {}", transform.translation);
         }
 
+        physics.get_mut(*handle).unwrap().add_force(accel * time.delta_seconds());
+        /*
         options.velocity += accel * time.delta_seconds();
 
         // clamp within max speed
@@ -155,6 +159,8 @@ pub fn camera_movement_system(
         };
 
         transform.translation += options.velocity;
+
+         */
     }
 }
 

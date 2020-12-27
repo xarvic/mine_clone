@@ -46,9 +46,9 @@ impl RigidBody {
         //Dampening
         //TODO: specify ground and air friction
         if self.flying {
-            self.velocity = (self.velocity * 0.9) + Vec3::new(0.0, -0.1, 0.0);
-        } else {
             self.velocity *= 0.8;
+        } else {
+            self.velocity = (self.velocity * 0.9) + Vec3::new(0.0, -0.2, 0.0);
         }
         //Apply force
         let force = replace(&mut self.next_force, Vec3::zero());
