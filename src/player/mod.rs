@@ -36,7 +36,7 @@ fn setup(
         })
         // camera
         .spawn(Camera3dBundle {
-            transform: Transform::from_translation(Vec3::new(-4.0, 5.0, -4.0))
+            transform: Transform::from_translation(Vec3::new(-4.0, 24.0, -4.0))
                 .looking_at(Vec3::default(), Vec3::unit_y()),
             ..Default::default()
         })

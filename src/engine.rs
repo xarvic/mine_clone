@@ -5,6 +5,7 @@ use bevy::render::render_graph::base::Msaa;
 use crate::player::init_player;
 use crate::world::init_world;
 use crate::renderer::init_rendering;
+use crate::physics::init_physics;
 
 pub fn load_engine(settings: Settings) -> App {
 
@@ -13,6 +14,7 @@ pub fn load_engine(settings: Settings) -> App {
     builder.add_resource(Msaa { samples: settings.render_settings.msaa_samples });
     builder.add_plugins(DefaultPlugins);
 
+    init_physics(&mut builder, &settings);
     //Add Player
     init_player(&mut builder, &settings);
     //Add World

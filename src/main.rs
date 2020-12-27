@@ -9,8 +9,6 @@ use anyhow::Result;
 use crate::settings::Settings;
 use std::io::{BufReader, BufWriter};
 use std::fs::File;
-use crate::physics::collider::AAQuader;
-use bevy::math::Vec3;
 
 #[macro_use] extern crate impl_ops;
 
@@ -47,17 +45,16 @@ fn load_settings() -> Result<Settings> {
 }
 
 fn main() -> Result<()>{
-    /*let settings = load_settings()?;
+    let settings = load_settings()?;
 
     let engine = load_engine(settings);
 
     engine.run();
-*/
 
-    let box1 = AAQuader::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(2.0, 2.0, 2.0));
+    /*let box1 = AAQuader::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(2.0, 2.0, 2.0));
     let box2 = AAQuader::new(Vec3::new(1.0, 1.0, 1.0), Vec3::new(3.0, 3.0, 3.0));
 
     println!("impact: {}", box1.impact_volume(box2));
-
+*/
     Ok(())
 }
