@@ -31,7 +31,7 @@ fn setup(
     let handle = physics.create_rigid_body(
         Vec3::new(-4.0, 24.0, -4.0),
         1.0,
-        true,
+        false,
         AAQuader::new(Vec3::new(-0.4, -1.5, -0.4), Vec3::new(0.4, 0.3, 0.4))
     );
 

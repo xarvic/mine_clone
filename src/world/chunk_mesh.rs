@@ -170,7 +170,7 @@ pub fn create_chunk_mesh<M: ChunkMeshBuilder>(chunk: &Chunk, query: &Query<(&Chu
     let center = chunk.position.center();
 
     for (position, block) in chunk_data.iter() {
-        let (look, personality) = &blocks[block.btype as usize];
+        let (look, _, personality) = &blocks[block.btype as usize];
         match look {
             BlockLook::Empty => {}
             BlockLook::DynamicBlockMesh => {

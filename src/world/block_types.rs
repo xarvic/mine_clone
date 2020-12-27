@@ -5,22 +5,23 @@ use crate::world::chunk_mesh::{VisibleDirection, Face};
 use crate::physics::collider::AAQuader;
 
 
-pub type StaticBlocks = [(BlockLook, Box<dyn BlockPersonality + Send + Sync>)];
+pub type StaticBlocks = [(BlockLook, BlockFeel, Box<dyn BlockPersonality + Send + Sync>)];
 
-pub type StaticBlocksRes = Vec<(BlockLook, Box<dyn BlockPersonality + Send + Sync>)>;
+pub type StaticBlocksRes = Vec<(BlockLook, BlockFeel, Box<dyn BlockPersonality + Send + Sync>)>;
 
 pub fn get_block_types() -> StaticBlocksRes {
-    let mut block_types: Vec<(BlockLook, Box<dyn BlockPersonality + Send + Sync>)> = vec![
-        (BlockLook::Empty, Box::new(Air)),
-        (BlockLook::Empty, Box::new(Cube::uniform("stone", 1))),
-        (BlockLook::Empty, Box::new(Cube::uniform("dirt", 2))),
-        (BlockLook::Empty, Box::new(Cube::top_side_bottom("grass", 0, 3, 2))),
-        (BlockLook::Empty, Box::new(Cube::top_side_bottom("log", 21, 20, 21))),
-        (BlockLook::Empty, Box::new(Cube::uniform("wood", 4))),
+    let mut block_types: StaticBlocksRes = vec![
+        (BlockLook::Empty, BlockFeel::Empty, Box::new(Air)),
+        (BlockLook::Empty, BlockFeel::Empty, Box::new(Cube::uniform("stone", 1))),
+        (BlockLook::Empty, BlockFeel::Empty, Box::new(Cube::uniform("dirt", 2))),
+        (BlockLook::Empty, BlockFeel::Empty, Box::new(Cube::top_side_bottom("grass", 0, 3, 2))),
+        (BlockLook::Empty, BlockFeel::Empty, Box::new(Cube::top_side_bottom("log", 21, 20, 21))),
+        (BlockLook::Empty, BlockFeel::Empty, Box::new(Cube::uniform("wood", 4))),
     ];
 
-    block_types.iter_mut().for_each(|(look, block)|{
+    block_types.iter_mut().for_each(|(look, feel, block)|{
         *look = block.get_block_look();
+        *feel = block.get_feel();
     });
 
     block_types

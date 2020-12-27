@@ -1,4 +1,6 @@
 use bevy::math::Vec3;
+use crate::world::coordinates::BlockPosition;
+use itertools::Itertools;
 
 struct Collider{
 }
@@ -53,9 +55,23 @@ impl AAQuader {
         self.lower = center - half_size * factor;
         self.higher = center + half_size * factor;
     }
+    pub fn translated(mut self, translation: Vec3) -> Self {
+        self.translate(translation);
+        self
+    }
+    pub fn scaled(mut self, factor: f32) -> Self {
+        self.scale(factor);
+        self
+    }
     pub fn volume(&self) -> f32 {
         let size = self.size();
         size.x * size.y * size.z
+    }
+    pub fn contained(&self) -> impl Iterator<Item=BlockPosition> {
+        (self.lower.x as i64..=self.higher.x as i64)
+            .cartesian_product(self.lower.y as i64..=self.higher.y as i64)
+            .cartesian_product(self.lower.z as i64..=self.higher.z as i64)
+            .map(|((x, y), z)|{BlockPosition::new(x, y, z)})
     }
 
     ///The signed overlapping volume of the quaders

@@ -16,6 +16,7 @@ pub fn init_physics(builder: &mut AppBuilder, settings: &Settings) {
     builder.add_system(update_physics.system());
 }
 
+//TODO: split in two, to avoid reserving resources mutable too long
 fn update_physics(
     mut physic_engine: ResMut<PhysicsEngine>,
     chunk_manager: Res<ChunkManager>,

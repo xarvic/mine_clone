@@ -5,7 +5,7 @@ use std::sync::mpsc::channel;
 use crate::world::chunk::{ChunkManager, Chunk};
 use bevy::ecs::Query;
 use bevy::prelude::Transform;
-use crate::world::block_types::StaticBlocks;
+use crate::world::block_types::{StaticBlocks, BlockFeel};
 use crate::physics::collider::AAQuader;
 use std::mem::replace;
 use std::sync::Mutex;
@@ -48,7 +48,7 @@ impl RigidBody {
         if self.flying {
             self.velocity *= 0.8;
         } else {
-            self.velocity = (self.velocity * 0.9) + Vec3::new(0.0, -0.2, 0.0);
+            self.velocity = (self.velocity * 0.75) + Vec3::new(0.0, -0.1, 0.0);
         }
         //Apply force
         let force = replace(&mut self.next_force, Vec3::zero());
@@ -112,6 +112,28 @@ impl PhysicsEngine {
         //Interaction moving entities and world
         for rigid_body in self.rigid_bodies.iter_mut() {
             rigid_body.apply_force();
+
+            let mut collider = rigid_body.collider.translated(rigid_body.position);
+
+            for position in collider.contained() {
+                if let Some(block) = world.get(position, &chunks) {
+                    match static_blocks[block.btype as usize].1 {
+                        BlockFeel::Empty => {}
+                        BlockFeel::ColliderSet(colliders) => {
+                            println!("check colliders!");
+                            for block_collider in colliders.iter().map(|c|c.translated(position.lower_corner())) {
+                                let result = collider.impact_volume(block_collider);
+                                if result.x != 0.0 && result.y != 0.0 && result.z != 0.0 {
+                                    println!(" - impact: {}", result);
+                                    restrict_motion(result, rigid_body);
+                                    collider = rigid_body.collider.translated(rigid_body.position);
+                                }
+                            }
+                        }
+                        BlockFeel::Custom => {}
+                    }
+                }
+            }
         }
     }
 
@@ -141,4 +163,23 @@ impl PhysicsEngine {
         let index = self.mapping.get(&handle).cloned();
         index.and_then(move|index|self.rigid_bodies.get_mut(index))
     }
+}
+
+fn restrict_motion(impact_volume: Vec3, rigid_body: &mut RigidBody) {
+    let tm = (impact_volume * rigid_body.velocity).abs();
+
+    println!("restrict {}", tm);
+
+    let impact_translation;
+
+    if tm.x > tm.y && tm.x > tm.z {
+        impact_translation = Vec3::new(impact_volume.x, 0.0, 0.0);
+    } else if tm.y >= tm.z {
+        impact_translation = Vec3::new(0.0, impact_volume.y, 0.0);
+    } else {
+        impact_translation = Vec3::new(0.0, 0.0, impact_volume.z);
+    }
+    rigid_body.position += impact_translation;
+    let impact_normal = impact_translation.normalize();
+    rigid_body.velocity += impact_normal * (impact_normal.dot(rigid_body.velocity)).max(0.0)
 }
